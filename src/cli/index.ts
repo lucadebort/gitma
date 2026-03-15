@@ -9,6 +9,8 @@ import { initCommand } from "./commands/init.js";
 import { statusCommand } from "./commands/status.js";
 import { diffCommand } from "./commands/diff.js";
 import { commitCommand } from "./commands/commit.js";
+import { pullCommand } from "./commands/pull.js";
+import { pushCommand } from "./commands/push.js";
 
 const program = new Command()
   .name("antikarlotta")
@@ -19,5 +21,7 @@ program.addCommand(initCommand);
 program.addCommand(statusCommand);
 program.addCommand(diffCommand);
 program.addCommand(commitCommand);
+program.addCommand(pullCommand);
+program.addCommand(pushCommand);
 
 program.parse();
