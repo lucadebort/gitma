@@ -114,10 +114,12 @@ async function pushFigmaToCode(
     }
 
     const absolutePath = resolve(projectRoot, codePath);
-    const result = applyAndSave(absolutePath, {
-      targetSchema,
-      changes: componentChanges,
-    });
+    const result = applyAndSave(
+      absolutePath,
+      { targetSchema, changes: componentChanges },
+      undefined,
+      config.formatCommand,
+    );
 
     totalApplied += result.appliedChanges.length;
 

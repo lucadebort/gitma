@@ -17,6 +17,7 @@ import {
 } from "ts-morph";
 import type { SchemaChange } from "../diff-engine/types.js";
 import type { ComponentSchema, Prop, Variant, Slot, State } from "../schema/types.js";
+import { formatFile } from "../shared/format.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -665,6 +666,7 @@ export function applyAndSave(
   filePath: string,
   options: ApplyChangesOptions,
   tsConfigPath?: string,
+  formatCommand?: string,
 ): WriteResult {
   const project = createWriteProject(tsConfigPath);
   project.addSourceFileAtPath(filePath);
@@ -674,6 +676,7 @@ export function applyAndSave(
 
   if (result.appliedChanges.length > 0) {
     sourceFile.saveSync();
+    formatFile(filePath, formatCommand);
   }
 
   return result;

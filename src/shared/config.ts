@@ -17,6 +17,8 @@ export interface ProjectConfig {
   tokenFile?: string;
   /** Token consumption format in code */
   tokenFormat: "css-vars" | "tailwind";
+  /** Command to format files after writing, e.g. "npx prettier --write" */
+  formatCommand?: string;
 }
 
 const DEFAULT_CONFIG: ProjectConfig = {

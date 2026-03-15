@@ -138,10 +138,12 @@ async function pullFromCode(
 
     const absolutePath = resolve(projectRoot, codePath);
 
-    const result = applyAndSave(absolutePath, {
-      targetSchema,
-      changes: componentChanges,
-    });
+    const result = applyAndSave(
+      absolutePath,
+      { targetSchema, changes: componentChanges },
+      undefined,
+      config.formatCommand,
+    );
 
     totalApplied += result.appliedChanges.length;
     totalSkipped += result.skippedChanges.length;
