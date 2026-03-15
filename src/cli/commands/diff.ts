@@ -8,8 +8,7 @@ import { loadConfig } from "../../shared/config.js";
 import { loadSnapshot } from "../../diff-engine/snapshot.js";
 import { diffSchemas } from "../../diff-engine/differ.js";
 import { readCodeComponents } from "../../code-adapter/reader.js";
-import { fetchComponents } from "../../figma-adapter/client.js";
-import { figmaToSchemas } from "../../figma-adapter/reader.js";
+import { readFigmaSchemas } from "../../figma-adapter/read-and-resolve.js";
 import { formatDiff } from "../formatters/diff-printer.js";
 
 export const diffCommand = new Command("diff")
@@ -43,10 +42,10 @@ export const diffCommand = new Command("diff")
       } else {
         try {
           console.log(chalk.dim("  Reading Figma..."));
-          const { componentSets, components } = await fetchComponents({
-            fileKey: config.figmaFileKey,
-          });
-          const figmaSchemas = figmaToSchemas(componentSets, components);
+          const figmaSchemas = await readFigmaSchemas(
+            { fileKey: config.figmaFileKey },
+            { nameMap: config.componentNameMap },
+          );
           let changes = diffSchemas(committed, figmaSchemas);
 
           if (opts.component) {

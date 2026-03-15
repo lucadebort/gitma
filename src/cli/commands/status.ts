@@ -8,8 +8,7 @@ import { loadConfig } from "../../shared/config.js";
 import { loadSnapshot } from "../../diff-engine/snapshot.js";
 import { diffSchemas } from "../../diff-engine/differ.js";
 import { readCodeComponents } from "../../code-adapter/reader.js";
-import { fetchComponents } from "../../figma-adapter/client.js";
-import { figmaToSchemas } from "../../figma-adapter/reader.js";
+import { readFigmaSchemas } from "../../figma-adapter/read-and-resolve.js";
 import { formatStatus } from "../formatters/status-printer.js";
 import type { SchemaChange } from "../../diff-engine/types.js";
 
@@ -37,10 +36,10 @@ export const statusCommand = new Command("status")
     if (config.figmaFileKey && opts.figma !== false) {
       try {
         console.log(chalk.dim("  Reading Figma..."));
-        const { componentSets, components } = await fetchComponents({
-          fileKey: config.figmaFileKey,
-        });
-        const figmaSchemas = figmaToSchemas(componentSets, components);
+        const figmaSchemas = await readFigmaSchemas(
+          { fileKey: config.figmaFileKey },
+          { nameMap: config.componentNameMap },
+        );
         figmaChanges = diffSchemas(committed, figmaSchemas);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

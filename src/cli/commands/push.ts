@@ -13,8 +13,7 @@ import { loadSnapshot, saveSnapshot } from "../../diff-engine/snapshot.js";
 import { diffSchemas } from "../../diff-engine/differ.js";
 import { readCodeComponents } from "../../code-adapter/reader.js";
 import { applyAndSave } from "../../code-adapter/writer.js";
-import { fetchComponents } from "../../figma-adapter/client.js";
-import { figmaToSchemas } from "../../figma-adapter/reader.js";
+import { readFigmaSchemas } from "../../figma-adapter/read-and-resolve.js";
 import { formatDiff } from "../formatters/diff-printer.js";
 import { generateDesignerInstructions } from "../../figma-adapter/writer.js";
 import type { ComponentSchema } from "../../schema/types.js";
@@ -52,10 +51,10 @@ async function pushFigmaToCode(
 
   // Step 1: Read Figma
   console.log(chalk.dim("  Step 1/3: Reading Figma components..."));
-  const { componentSets, components } = await fetchComponents({
-    fileKey: config.figmaFileKey,
-  });
-  const figmaSchemas = figmaToSchemas(componentSets, components);
+  const figmaSchemas = await readFigmaSchemas(
+    { fileKey: config.figmaFileKey },
+    { nameMap: config.componentNameMap },
+  );
 
   // Step 2: Diff Figma vs committed
   let figmaChanges = diffSchemas(committed, figmaSchemas);

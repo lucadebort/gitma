@@ -19,6 +19,12 @@ export interface ProjectConfig {
   tokenFormat: "css-vars" | "tailwind";
   /** Command to format files after writing, e.g. "npx prettier --write" */
   formatCommand?: string;
+  /**
+   * Component name mapping: Figma name → code name.
+   * Applied after normalization (trim + whitespace collapse).
+   * e.g. { "Button ": "Button", "Fab test": "FloatingActionButton" }
+   */
+  componentNameMap?: Record<string, string>;
 }
 
 const DEFAULT_CONFIG: ProjectConfig = {

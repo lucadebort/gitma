@@ -14,8 +14,7 @@ import { diffSchemas } from "../../diff-engine/differ.js";
 import { readCodeComponents } from "../../code-adapter/reader.js";
 import { applyAndSave } from "../../code-adapter/writer.js";
 import { formatDiff } from "../formatters/diff-printer.js";
-import { fetchComponents } from "../../figma-adapter/client.js";
-import { figmaToSchemas } from "../../figma-adapter/reader.js";
+import { readFigmaSchemas } from "../../figma-adapter/read-and-resolve.js";
 import type { ComponentSchema } from "../../schema/types.js";
 
 export const pullCommand = new Command("pull")
@@ -51,11 +50,10 @@ async function pullFromFigma(
 
   console.log(chalk.dim("  Reading Figma components..."));
 
-  const { componentSets, components } = await fetchComponents({
-    fileKey: config.figmaFileKey,
-  });
-
-  const figmaSchemas = figmaToSchemas(componentSets, components);
+  const figmaSchemas = await readFigmaSchemas(
+    { fileKey: config.figmaFileKey },
+    { nameMap: config.componentNameMap },
+  );
 
   let changes = diffSchemas(committed, figmaSchemas);
 
