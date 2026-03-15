@@ -4,6 +4,9 @@
  * antikarlotta CLI — bidirectional Figma-code sync.
  */
 
+import { config } from "dotenv";
+config(); // loads .env from cwd
+
 import { Command } from "commander";
 import { initCommand } from "./commands/init.js";
 import { statusCommand } from "./commands/status.js";
