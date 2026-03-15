@@ -27,11 +27,49 @@ function mapFigmaPropertyType(figmaType: string): PropType {
 }
 
 /**
- * Figma names properties with a "#" prefix for hidden properties
- * and uses camelCase or kebab-case naming.
+ * Clean Figma property names:
+ * - Strip trailing node ID suffix: "Button label#712:0" → "Button label"
+ * - Strip leading "#" for hidden properties
+ * - Trim whitespace
+ * - Convert to camelCase: "Button label" → "buttonLabel", "Show Label" → "showLabel"
  */
 function cleanPropertyName(name: string): string {
-  return name.replace(/^#/, "").trim();
+  const stripped = name
+    .replace(/#\d+:\d+$/, "")  // strip trailing #nodeId (e.g. #712:0)
+    .replace(/^#/, "")          // strip leading # (hidden props)
+    .trim();
+
+  return toCamelCase(stripped);
+}
+
+/**
+ * Convert a string to camelCase.
+ * "Button label" → "buttonLabel"
+ * "Show Label" → "showLabel"
+ * "Icon Placement" → "iconPlacement"
+ * "size" → "size" (already lowercase, no change)
+ * "isChecked" → "isChecked" (already camelCase)
+ */
+function toCamelCase(str: string): string {
+  // If it's a single word already in camelCase or lowercase, return as-is
+  if (!str.includes(" ") && !str.includes("-") && !str.includes("_")) {
+    // Lowercase the first character if the whole string isn't uppercase
+    if (str.length > 0 && str !== str.toUpperCase()) {
+      return str[0].toLowerCase() + str.slice(1);
+    }
+    return str.toLowerCase();
+  }
+
+  // Split on spaces, hyphens, underscores
+  const words = str.split(/[\s\-_]+/).filter(Boolean);
+  if (words.length === 0) return str;
+
+  return words
+    .map((word, i) => {
+      if (i === 0) return word.toLowerCase();
+      return word[0].toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join("");
 }
 
 // ---------------------------------------------------------------------------
