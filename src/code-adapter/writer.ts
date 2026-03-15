@@ -526,7 +526,7 @@ function applyChange(
           destructuringOps.push({
             type: "updateDefault",
             name: fieldName,
-            defaultValue: String(change.after),
+            defaultValue: quoteIfString(change.after),
           });
           return true;
         }
@@ -630,6 +630,19 @@ function formatDefaultValue(
   if (typeof value === "boolean") return String(value);
   if (typeof value === "number") return String(value);
   return `"${value}"`;
+}
+
+/**
+ * Ensure a value is properly quoted for use as a JS expression in destructuring.
+ */
+function quoteIfString(value: unknown): string {
+  if (typeof value === "boolean" || typeof value === "number") return String(value);
+  const str = String(value);
+  // Already quoted
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    return str;
+  }
+  return `"${str}"`;
 }
 
 // ---------------------------------------------------------------------------
