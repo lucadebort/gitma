@@ -16,6 +16,7 @@ import { applyAndSave } from "../../code-adapter/writer.js";
 import { fetchComponents } from "../../figma-adapter/client.js";
 import { figmaToSchemas } from "../../figma-adapter/reader.js";
 import { formatDiff } from "../formatters/diff-printer.js";
+import { generateDesignerInstructions } from "../../figma-adapter/writer.js";
 import type { ComponentSchema } from "../../schema/types.js";
 
 export const pushCommand = new Command("push")
@@ -157,11 +158,24 @@ async function pushCodeToFigma(
     return;
   }
 
-  // Step 3: Commit code state to schema
+  // Step 3: Commit code state and generate designer instructions
   console.log(chalk.dim("\n  Step 3/3: Updating schema..."));
   saveSnapshot(projectRoot, "committed", codeComponents, "code");
 
-  // TODO: Apply to Figma via REST API / MCP write-back
-  console.log(chalk.yellow("  Figma write-back not yet implemented. Schema updated from code."));
-  console.log(chalk.dim("  The designer can view the updated schema and apply changes manually.\n"));
+  // Generate instructions for the designer
+  const instructions = generateDesignerInstructions(changes);
+
+  if (instructions.length > 0) {
+    console.log(chalk.bold("\n  Designer instructions (apply in Figma):\n"));
+    for (const inst of instructions) {
+      console.log(chalk.blue(`  ${inst.componentName}:`));
+      for (const line of inst.instructions) {
+        console.log(chalk.dim(`    → ${line}`));
+      }
+    }
+    console.log(chalk.dim("\n  These changes require manual application in Figma."));
+    console.log(chalk.dim("  Component properties cannot be modified via REST API.\n"));
+  } else {
+    console.log(chalk.green("\n  Schema updated from code.\n"));
+  }
 }
