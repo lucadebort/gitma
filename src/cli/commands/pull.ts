@@ -1,7 +1,7 @@
 /**
  * pull command — apply committed schema changes to code or Figma.
  *
- * gitma pull figma  → read Figma, diff against committed, show changes
+ * gitma pull figma  → read Figma snapshot, diff against committed, show changes
  * gitma pull code   → apply committed schema to code files
  */
 
@@ -14,8 +14,6 @@ import { diffSchemas } from "../../diff-engine/differ.js";
 import { readCodeComponents } from "../../code-adapter/reader.js";
 import { applyAndSave } from "../../code-adapter/writer.js";
 import { formatDiff } from "../formatters/diff-printer.js";
-import { readFigmaSchemas } from "../../figma-adapter/read-and-resolve.js";
-import { connectFigma, disconnect } from "../figma-connect.js";
 import type { ComponentSchema } from "../../schema/types.js";
 
 export const pullCommand = new Command("pull")
@@ -44,14 +42,12 @@ async function pullFromFigma(
   committed: ComponentSchema[],
   opts: { apply?: boolean; component?: string },
 ) {
-  console.log(chalk.dim("  Reading Figma components..."));
+  const figmaSchemas = loadSnapshot(projectRoot, "figma");
 
-  const conn = await connectFigma(config.figmaFileKey);
-  const figmaSchemas = await readFigmaSchemas(
-    conn,
-    { nameConfig: { nameMap: config.componentNameMap }, propertyMap: config.propertyMap },
-  );
-  await disconnect(conn);
+  if (!figmaSchemas || figmaSchemas.length === 0) {
+    console.log(chalk.red("  No Figma snapshot. Use /gitma in Claude Code to refresh."));
+    process.exit(1);
+  }
 
   let changes = diffSchemas(committed, figmaSchemas);
 
@@ -68,8 +64,6 @@ async function pullFromFigma(
   console.log(formatDiff(changes));
 
   if (opts.apply) {
-    // Update committed snapshot with Figma state
-    saveSnapshot(projectRoot, "figma", figmaSchemas, "figma");
     saveSnapshot(projectRoot, "committed", figmaSchemas, "figma");
     console.log(chalk.green(`\n  Pulled ${changes.length} change(s) from Figma into committed schema.\n`));
   } else {
@@ -85,9 +79,6 @@ async function pullFromCode(
 ) {
   const codeComponents = readCodeComponents(projectRoot, config.componentGlobs);
 
-  // Here "pull code" means: take the committed schema and apply it to the code files.
-  // i.e., the schema is the source of truth, and code needs to be updated to match.
-  // We diff committed (what the code should look like) against current code.
   let changes = diffSchemas(codeComponents, committed);
 
   if (opts.component) {
@@ -107,7 +98,6 @@ async function pullFromCode(
     return;
   }
 
-  // Group changes by component and apply to files
   const byComponent = new Map<string, typeof changes>();
   for (const change of changes) {
     const group = byComponent.get(change.componentName) ?? [];
@@ -119,11 +109,9 @@ async function pullFromCode(
   let totalSkipped = 0;
 
   for (const [componentName, componentChanges] of byComponent) {
-    // Find the target schema for this component
     const targetSchema = committed.find((c) => c.name === componentName);
     if (!targetSchema) continue;
 
-    // Find the code file for this component
     const codeComponent = codeComponents.find((c) => c.name === componentName);
     const codePath = targetSchema.codePath ?? codeComponent?.codePath;
     if (!codePath) {

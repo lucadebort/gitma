@@ -2,8 +2,8 @@
  * tokens command — sync W3C Design Tokens between .tokens.json and Figma variables.
  *
  * gitma tokens status             → show token drift
- * gitma tokens pull figma         → Figma variables → .tokens.json
- * gitma tokens push figma         → .tokens.json → Figma variables
+ * gitma tokens pull figma         → Figma variables (from snapshot) → .tokens.json
+ * gitma tokens push figma         → .tokens.json → write ops for Claude Code
  * gitma tokens validate           → validate .tokens.json against W3C spec
  */
 
@@ -15,9 +15,8 @@ import { loadConfig } from "../../shared/config.js";
 import type { DesignTokenFile } from "../../schema/tokens.js";
 import { flattenTokens } from "../../schema/tokens.js";
 import { tokensToFigmaVariables, figmaVariablesToTokens } from "../../figma-adapter/token-bridge.js";
-import { fetchVariables } from "../../figma-adapter/client.js";
-import { writeVariablesToFigma } from "../../figma-adapter/writer.js";
-import { connectFigma, disconnect } from "../figma-connect.js";
+import type { RawFigmaData } from "../../figma-adapter/client.js";
+import { convertRawVariables } from "../../figma-adapter/client.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,6 +32,12 @@ function loadTokenFile(projectRoot: string, tokenPath: string): DesignTokenFile 
 function saveTokenFile(projectRoot: string, tokenPath: string, tokens: DesignTokenFile): void {
   const absPath = resolve(projectRoot, tokenPath);
   writeFileSync(absPath, JSON.stringify(tokens, null, 2) + "\n", "utf-8");
+}
+
+function loadFigmaVariableSnapshot(projectRoot: string): RawFigmaData | null {
+  const path = resolve(projectRoot, ".gitma", "figma-variables.json");
+  if (!existsSync(path)) return null;
+  return JSON.parse(readFileSync(path, "utf-8"));
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +70,6 @@ tokensCommand
       console.log(chalk.bold(`\n  Token file: ${tokenPath}`));
       console.log(chalk.green(`  ${resolved.length} token(s) resolved successfully.\n`));
 
-      // Group by type
       const byType = new Map<string, number>();
       for (const token of resolved) {
         byType.set(token.type, (byType.get(token.type) ?? 0) + 1);
@@ -103,7 +107,6 @@ tokensCommand
       const resolved = flattenTokens(tokenFile);
       console.log(chalk.green(`\n  Valid: ${resolved.length} token(s) resolved.\n`));
 
-      // Check for tokens without explicit types
       for (const token of resolved) {
         if (!token.type) {
           errors.push(`Token "${token.path}" has no type`);
@@ -128,7 +131,7 @@ tokensCommand
   .command("pull")
   .argument("<source>", "Source: 'figma'")
   .option("--apply", "Write to .tokens.json (default is dry-run)")
-  .description("Pull tokens from Figma variables into .tokens.json")
+  .description("Pull tokens from Figma variables snapshot into .tokens.json")
   .action(async (source: string, opts) => {
     if (source !== "figma") {
       console.log(chalk.red(`  Unknown source: ${source}. Use 'figma'.\n`));
@@ -139,14 +142,16 @@ tokensCommand
     const config = loadConfig(projectRoot);
     const tokenPath = config.tokenFile ?? "tokens.tokens.json";
 
-    console.log(chalk.dim("  Reading Figma variables..."));
+    const rawData = loadFigmaVariableSnapshot(projectRoot);
+    if (!rawData) {
+      console.log(chalk.red("  No Figma variable snapshot. Use /gitma in Claude Code to refresh.\n"));
+      return;
+    }
 
-    const conn = await connectFigma(config.figmaFileKey);
-    const { variables, collections } = await fetchVariables(conn);
-    await disconnect(conn);
+    const { variables, collections } = convertRawVariables(rawData);
 
     if (variables.length === 0) {
-      console.log(chalk.dim("\n  No variables found in Figma file.\n"));
+      console.log(chalk.dim("\n  No variables found in Figma snapshot.\n"));
       return;
     }
 
@@ -155,7 +160,6 @@ tokensCommand
 
     console.log(chalk.bold(`\n  Found ${variables.length} Figma variable(s) → ${resolved.length} token(s).\n`));
 
-    // Group by type
     const byType = new Map<string, number>();
     for (const token of resolved) {
       byType.set(token.type, (byType.get(token.type) ?? 0) + 1);
@@ -177,8 +181,8 @@ tokensCommand
 tokensCommand
   .command("push")
   .argument("<target>", "Target: 'figma'")
-  .option("--apply", "Push to Figma (default is dry-run)")
-  .description("Push .tokens.json to Figma variables")
+  .option("--apply", "Save write ops for Claude Code (default is dry-run)")
+  .description("Push .tokens.json to Figma variables via Claude Code")
   .action(async (target: string, opts) => {
     if (target !== "figma") {
       console.log(chalk.red(`  Unknown target: ${target}. Use 'figma'.\n`));
@@ -204,7 +208,6 @@ tokensCommand
 
     console.log(chalk.bold(`\n  ${figmaVars.length} variable(s) to push to Figma:\n`));
 
-    // Group by collection
     const byCollection = new Map<string, number>();
     for (const v of figmaVars) {
       byCollection.set(v.collectionName, (byCollection.get(v.collectionName) ?? 0) + 1);
@@ -214,34 +217,14 @@ tokensCommand
     }
 
     if (!opts.apply) {
-      console.log(chalk.dim("\n  Dry run. Use --apply to push to Figma.\n"));
+      console.log(chalk.dim("\n  Dry run. Use --apply to save write ops.\n"));
       return;
     }
 
-    console.log(chalk.dim("\n  Pushing to Figma..."));
+    // Save variable write ops for Claude Code to apply
+    const opsPath = resolve(projectRoot, ".gitma", "figma-token-ops.json");
+    writeFileSync(opsPath, JSON.stringify(figmaVars, null, 2) + "\n", "utf-8");
 
-    // Connect and read existing variables to determine create vs update
-    const conn = await connectFigma(config.figmaFileKey);
-    const { variables: existing, collections: existingCollections } = await fetchVariables(conn);
-
-    const existingCollMap = new Map(existingCollections.map((c) => [c.name, c.id]));
-    const existingVarMap = new Map(existing.map((v) => [v.name, v.id]));
-
-    const result = await writeVariablesToFigma(
-      conn,
-      figmaVars,
-      existingCollMap,
-      existingVarMap,
-    );
-
-    await disconnect(conn);
-
-    if (result.errors.length > 0) {
-      console.log(chalk.red(`\n  Errors:`));
-      for (const err of result.errors) {
-        console.log(chalk.red(`    - ${err}`));
-      }
-    }
-
-    console.log(chalk.green(`\n  Done: ${result.created} created, ${result.updated} updated.\n`));
+    console.log(chalk.green(`\n  Saved to .gitma/figma-token-ops.json`));
+    console.log(chalk.dim("  Claude Code will apply these via figma_execute.\n"));
   });

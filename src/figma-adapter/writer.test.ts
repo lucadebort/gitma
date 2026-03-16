@@ -1,12 +1,20 @@
 import { describe, it, expect } from "vitest";
 import type { SchemaChange } from "../diff-engine/types.js";
-import { generateDesignerInstructions } from "./writer.js";
+import { schemaChangesToWriteOps, writeOpsToInstructions } from "./writer.js";
+
+/** Helper: changes → human-readable instructions (replaces old generateDesignerInstructions) */
+function toInstructions(changes: SchemaChange[]) {
+  // Add figmaNodeId so ops are generated (writer skips changes without nodeId)
+  const withNodeId = changes.map((c) => ({ ...c, figmaNodeId: "test:1" }));
+  const ops = schemaChangesToWriteOps(withNodeId);
+  return writeOpsToInstructions(ops);
+}
 
 // ---------------------------------------------------------------------------
-// generateDesignerInstructions tests
+// writeOpsToInstructions tests (equivalent to old generateDesignerInstructions)
 // ---------------------------------------------------------------------------
 
-describe("generateDesignerInstructions", () => {
+describe("writeOpsToInstructions", () => {
   it("generates instruction for added variant", () => {
     const changes: SchemaChange[] = [
       {
@@ -20,10 +28,10 @@ describe("generateDesignerInstructions", () => {
       },
     ];
 
-    const instructions = generateDesignerInstructions(changes);
+    const instructions = toInstructions(changes);
     expect(instructions).toHaveLength(1);
     expect(instructions[0].componentName).toBe("Button");
-    expect(instructions[0].instructions[0]).toContain("Add variant property");
+    expect(instructions[0].instructions[0]).toContain("variant property");
     expect(instructions[0].instructions[0]).toContain("sm, md, lg");
   });
 
@@ -39,7 +47,7 @@ describe("generateDesignerInstructions", () => {
       },
     ];
 
-    const instructions = generateDesignerInstructions(changes);
+    const instructions = toInstructions(changes);
     expect(instructions[0].instructions[0]).toContain("Remove variant property");
   });
 
@@ -57,8 +65,8 @@ describe("generateDesignerInstructions", () => {
       },
     ];
 
-    const instructions = generateDesignerInstructions(changes);
-    expect(instructions[0].instructions[0]).toContain("Add variant values");
+    const instructions = toInstructions(changes);
+    expect(instructions[0].instructions[0]).toContain("variant values");
     expect(instructions[0].instructions[0]).toContain("xl");
   });
 
@@ -75,8 +83,8 @@ describe("generateDesignerInstructions", () => {
       },
     ];
 
-    const instructions = generateDesignerInstructions(changes);
-    expect(instructions[0].instructions[0]).toContain("string property");
+    const instructions = toInstructions(changes);
+    expect(instructions[0].instructions[0]).toContain("TEXT property");
     expect(instructions[0].instructions[0]).toContain("tooltip");
   });
 
@@ -92,8 +100,8 @@ describe("generateDesignerInstructions", () => {
       },
     ];
 
-    const instructions = generateDesignerInstructions(changes);
-    expect(instructions[0].instructions[0]).toContain("instance swap property");
+    const instructions = toInstructions(changes);
+    expect(instructions[0].instructions[0]).toContain("INSTANCE_SWAP property");
   });
 
   it("generates instruction for added state", () => {
@@ -108,8 +116,8 @@ describe("generateDesignerInstructions", () => {
       },
     ];
 
-    const instructions = generateDesignerInstructions(changes);
-    expect(instructions[0].instructions[0]).toContain("boolean property");
+    const instructions = toInstructions(changes);
+    expect(instructions[0].instructions[0]).toContain("BOOLEAN property");
     expect(instructions[0].instructions[0]).toContain("loading");
   });
 
@@ -142,7 +150,7 @@ describe("generateDesignerInstructions", () => {
       },
     ];
 
-    const instructions = generateDesignerInstructions(changes);
+    const instructions = toInstructions(changes);
     expect(instructions).toHaveLength(2);
     expect(instructions[0].componentName).toBe("Button");
     expect(instructions[0].instructions).toHaveLength(2);
@@ -164,7 +172,7 @@ describe("generateDesignerInstructions", () => {
       },
     ];
 
-    const instructions = generateDesignerInstructions(changes);
+    const instructions = toInstructions(changes);
     expect(instructions).toHaveLength(0);
   });
 });

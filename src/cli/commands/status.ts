@@ -8,14 +8,12 @@ import { loadConfig } from "../../shared/config.js";
 import { loadSnapshot } from "../../diff-engine/snapshot.js";
 import { diffSchemas } from "../../diff-engine/differ.js";
 import { readCodeComponents } from "../../code-adapter/reader.js";
-import { readFigmaSchemas } from "../../figma-adapter/read-and-resolve.js";
 import { formatStatus } from "../formatters/status-printer.js";
-import { connectFigma, disconnect } from "../figma-connect.js";
 import type { SchemaChange } from "../../diff-engine/types.js";
 
 export const statusCommand = new Command("status")
   .description("Show component sync status")
-  .option("--no-figma", "Skip Figma read (offline mode)")
+  .option("--no-figma", "Skip Figma snapshot comparison")
   .action(async (opts) => {
     const projectRoot = process.cwd();
     const config = loadConfig(projectRoot);
@@ -32,22 +30,14 @@ export const statusCommand = new Command("status")
     // Diff code vs committed
     const codeChanges = diffSchemas(committed, codeComponents);
 
-    // Read Figma state if configured
+    // Read Figma snapshot (populated by `gitma figma refresh` via Claude Code)
     let figmaChanges: SchemaChange[] = [];
     if (opts.figma !== false) {
-      try {
-        console.log(chalk.dim("  Reading Figma..."));
-        const conn = await connectFigma(config.figmaFileKey);
-        const figmaSchemas = await readFigmaSchemas(
-          conn,
-          { nameConfig: { nameMap: config.componentNameMap }, propertyMap: config.propertyMap },
-        );
-        figmaChanges = diffSchemas(committed, figmaSchemas);
-        await disconnect(conn);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.log(chalk.yellow(`  Could not read Figma: ${msg}`));
-        console.log(chalk.dim("  Use --no-figma to skip, or ensure Figma Desktop is running.\n"));
+      const figmaSnapshot = loadSnapshot(projectRoot, "figma");
+      if (figmaSnapshot && figmaSnapshot.length > 0) {
+        figmaChanges = diffSchemas(committed, figmaSnapshot);
+      } else {
+        console.log(chalk.dim("  No Figma snapshot. Use /gitma in Claude Code to refresh.\n"));
       }
     }
 

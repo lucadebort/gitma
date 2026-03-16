@@ -1,22 +1,21 @@
 /**
  * push command — read from one side, commit to schema, then apply to the other.
  *
- * gitma push figma-to-code  → read Figma → commit → apply to code
- * gitma push code-to-figma  → read code → commit → write to Figma via MCP
+ * gitma push figma-to-code  → read Figma snapshot → commit → apply to code
+ * gitma push code-to-figma  → read code → commit → output Figma write ops
  */
 
 import { Command } from "commander";
 import chalk from "chalk";
 import { resolve } from "node:path";
+import { writeFileSync } from "node:fs";
 import { loadConfig } from "../../shared/config.js";
 import { loadSnapshot, saveSnapshot } from "../../diff-engine/snapshot.js";
 import { diffSchemas } from "../../diff-engine/differ.js";
 import { readCodeComponents } from "../../code-adapter/reader.js";
 import { applyAndSave } from "../../code-adapter/writer.js";
-import { readFigmaSchemas } from "../../figma-adapter/read-and-resolve.js";
 import { formatDiff } from "../formatters/diff-printer.js";
-import { applySchemaChangesToFigma, generateDesignerInstructions } from "../../figma-adapter/writer.js";
-import { connectFigma, disconnect } from "../figma-connect.js";
+import { schemaChangesToWriteOps, writeOpsToInstructions } from "../../figma-adapter/writer.js";
 import type { ComponentSchema } from "../../schema/types.js";
 
 export const pushCommand = new Command("push")
@@ -45,16 +44,14 @@ async function pushFigmaToCode(
   committed: ComponentSchema[],
   opts: { apply?: boolean; component?: string },
 ) {
-  // Step 1: Read Figma
-  console.log(chalk.dim("  Step 1/3: Reading Figma components..."));
-  const conn = await connectFigma(config.figmaFileKey);
-  const figmaSchemas = await readFigmaSchemas(
-    conn,
-    { nameConfig: { nameMap: config.componentNameMap }, propertyMap: config.propertyMap },
-  );
-  await disconnect(conn);
+  const figmaSchemas = loadSnapshot(projectRoot, "figma");
 
-  // Step 2: Diff Figma vs committed
+  if (!figmaSchemas || figmaSchemas.length === 0) {
+    console.log(chalk.red("  No Figma snapshot. Use /gitma in Claude Code to refresh."));
+    process.exit(1);
+  }
+
+  // Diff Figma vs committed
   let figmaChanges = diffSchemas(committed, figmaSchemas);
   if (opts.component) {
     figmaChanges = figmaChanges.filter((c) => c.componentName === opts.component);
@@ -65,7 +62,7 @@ async function pushFigmaToCode(
     return;
   }
 
-  console.log(chalk.bold("\n  Step 2/3: Figma changes detected:"));
+  console.log(chalk.bold("\n  Figma changes detected:"));
   console.log(formatDiff(figmaChanges));
 
   if (!opts.apply) {
@@ -73,13 +70,12 @@ async function pushFigmaToCode(
     return;
   }
 
-  // Step 3: Commit Figma state, then apply to code
-  console.log(chalk.dim("\n  Step 3/3: Applying to code..."));
+  // Commit Figma state, then apply to code
+  console.log(chalk.dim("  Applying to code..."));
   saveSnapshot(projectRoot, "committed", figmaSchemas, "figma");
 
   const codeComponents = readCodeComponents(projectRoot, config.componentGlobs);
 
-  // Now diff the NEW committed schema against current code
   let codeChanges = diffSchemas(codeComponents, figmaSchemas);
   if (opts.component) {
     codeChanges = codeChanges.filter((c) => c.componentName === opts.component);
@@ -134,11 +130,10 @@ async function pushCodeToFigma(
   committed: ComponentSchema[],
   opts: { apply?: boolean; component?: string },
 ) {
-  // Step 1: Read code
-  console.log(chalk.dim("  Step 1/3: Reading code components..."));
+  // Read code
   const codeComponents = readCodeComponents(projectRoot, config.componentGlobs);
 
-  // Step 2: Diff code vs committed
+  // Diff code vs committed
   let changes = diffSchemas(committed, codeComponents);
   if (opts.component) {
     changes = changes.filter((c) => c.componentName === opts.component);
@@ -149,7 +144,7 @@ async function pushCodeToFigma(
     return;
   }
 
-  console.log(chalk.bold("\n  Step 2/3: Code changes detected:"));
+  console.log(chalk.bold("\n  Code changes detected:"));
   console.log(formatDiff(changes));
 
   if (!opts.apply) {
@@ -157,47 +152,38 @@ async function pushCodeToFigma(
     return;
   }
 
-  // Step 3: Commit code state and write to Figma via MCP
-  console.log(chalk.dim("\n  Step 3/3: Writing to Figma..."));
+  // Commit code state
   saveSnapshot(projectRoot, "committed", codeComponents, "code");
 
-  // Connect to Figma and apply changes directly
-  const conn = await connectFigma(config.figmaFileKey);
+  // Generate write operations for Claude Code to apply
+  const ops = schemaChangesToWriteOps(changes);
+  const instructions = writeOpsToInstructions(ops);
 
-  const writeResult = await applySchemaChangesToFigma(conn, changes);
-  await disconnect(conn);
+  if (ops.length > 0) {
+    // Save write ops as JSON for Claude Code to consume
+    const opsPath = resolve(projectRoot, ".gitma", "figma-write-ops.json");
+    writeFileSync(opsPath, JSON.stringify(ops, null, 2) + "\n", "utf-8");
 
-  if (writeResult.applied > 0) {
-    console.log(chalk.green(`\n  ${writeResult.applied} change(s) written to Figma.`));
-  }
-
-  // Show any errors or fallback instructions
-  if (writeResult.errors.length > 0) {
-    const variantErrors = writeResult.errors.filter((e) => e.includes("variant"));
-    const otherErrors = writeResult.errors.filter((e) => !e.includes("variant"));
-
-    if (otherErrors.length > 0) {
-      console.log(chalk.red("\n  Errors:"));
-      for (const err of otherErrors) {
-        console.log(chalk.red(`    - ${err}`));
+    console.log(chalk.bold("\n  Figma changes to apply:\n"));
+    for (const inst of instructions) {
+      console.log(chalk.blue(`  ${inst.componentName}:`));
+      for (const line of inst.instructions) {
+        console.log(chalk.dim(`    → ${line}`));
       }
     }
 
-    if (variantErrors.length > 0) {
-      // Variant changes need manual intervention — generate instructions
-      const instructions = generateDesignerInstructions(
-        changes.filter((c) => c.target === "variant"),
-      );
-      if (instructions.length > 0) {
-        console.log(chalk.bold("\n  Manual steps needed (variant changes):"));
-        for (const inst of instructions) {
-          console.log(chalk.blue(`    ${inst.componentName}:`));
-          for (const line of inst.instructions) {
-            console.log(chalk.dim(`      → ${line}`));
-          }
-        }
-      }
+    const automated = ops.filter((o) => o.operation.type !== "manual").length;
+    const manual = ops.filter((o) => o.operation.type === "manual").length;
+
+    if (automated > 0) {
+      console.log(chalk.green(`\n  ${automated} change(s) saved to .gitma/figma-write-ops.json`));
+      console.log(chalk.dim("  Claude Code will apply these via figma_execute."));
     }
+    if (manual > 0) {
+      console.log(chalk.yellow(`  ${manual} change(s) require manual work in Figma.`));
+    }
+  } else {
+    console.log(chalk.green("\n  Schema updated from code.\n"));
   }
 
   console.log();

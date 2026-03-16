@@ -8,9 +8,7 @@ import { loadConfig } from "../../shared/config.js";
 import { loadSnapshot } from "../../diff-engine/snapshot.js";
 import { diffSchemas } from "../../diff-engine/differ.js";
 import { readCodeComponents } from "../../code-adapter/reader.js";
-import { readFigmaSchemas } from "../../figma-adapter/read-and-resolve.js";
 import { formatDiff } from "../formatters/diff-printer.js";
-import { connectFigma, disconnect } from "../figma-connect.js";
 
 export const diffCommand = new Command("diff")
   .description("Show detailed component diff")
@@ -38,16 +36,11 @@ export const diffCommand = new Command("diff")
     }
 
     if (opts.figma) {
-      try {
-        console.log(chalk.dim("  Reading Figma..."));
-        const conn = await connectFigma(config.figmaFileKey);
-        const figmaSchemas = await readFigmaSchemas(
-          conn,
-          { nameConfig: { nameMap: config.componentNameMap }, propertyMap: config.propertyMap },
-        );
-        await disconnect(conn);
-
-        let changes = diffSchemas(committed, figmaSchemas);
+      const figmaSnapshot = loadSnapshot(projectRoot, "figma");
+      if (!figmaSnapshot || figmaSnapshot.length === 0) {
+        console.log(chalk.dim("\n  No Figma snapshot. Use /gitma in Claude Code to refresh."));
+      } else {
+        let changes = diffSchemas(committed, figmaSnapshot);
 
         if (opts.component) {
           changes = changes.filter((c) => c.componentName === opts.component);
@@ -55,8 +48,6 @@ export const diffCommand = new Command("diff")
 
         console.log(chalk.bold("\n  Figma → Schema diff:"));
         console.log(formatDiff(changes));
-      } catch (err) {
-        console.log(chalk.red(`\n  Could not read Figma: ${err instanceof Error ? err.message : String(err)}`));
       }
     }
 

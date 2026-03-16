@@ -17,6 +17,7 @@ import { pushCommand } from "./commands/push.js";
 import { stageCommand } from "./commands/stage.js";
 import { resolveCommand } from "./commands/resolve.js";
 import { tokensCommand } from "./commands/tokens.js";
+import { figmaCommand } from "./commands/figma.js";
 
 const program = new Command()
   .name("gitma")
@@ -32,5 +33,6 @@ program.addCommand(pullCommand);
 program.addCommand(pushCommand);
 program.addCommand(resolveCommand);
 program.addCommand(tokensCommand);
+program.addCommand(figmaCommand);
 
 program.parse();
