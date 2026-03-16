@@ -370,7 +370,7 @@ The preview is a **3-column layout**:
 **Key rules:**
 
 **Component list page:**
-- Sidebar with all components as clickable items (name + meta like "3 variants, 4 props")
+- Sidebar with all components as clickable items (name + meta like "3 variants, 4 props"). No icons — just text.
 - Click → navigate to component page
 - "POWERED BY GITMA" at the bottom of sidebar with link to https://github.com/lucadebort/gitma
 

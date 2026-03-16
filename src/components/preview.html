@@ -29,7 +29,6 @@
   .nav-item:hover { background: #f5f5f5; }
   .nav-item-name { font-size: 14px; font-weight: 500; }
   .nav-item-meta { font-size: 11px; color: #999; }
-  .nav-item-icon { width: 32px; height: 32px; border-radius: 6px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .nav-main { padding: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .nav-main .empty h2 { font-size: 20px; color: #333; margin-bottom: 8px; }
   .nav-main .empty p { color: #999; font-size: 14px; }
@@ -319,12 +318,11 @@ function toggleCodeDock() {
 
 // ===== Nav =====
 const components = [
-  { id: "badge", name: "Badge", meta: "5 actions, 4 sizes, 2 variants", icon: "star" },
-  { id: "menuitem", name: "Menu Item", meta: "4 states, 2 sizes, icon swap", icon: "menu" },
+  { id: "badge", name: "Badge", meta: "5 actions, 4 sizes, 2 variants" },
+  { id: "menuitem", name: "Menu Item", meta: "4 states, 2 sizes, icon swap" },
 ];
 document.getElementById("component-list").innerHTML = components.map(c => `
   <li class="nav-item" onclick="showPage('${c.id}')">
-    <div class="nav-item-icon"><svg style="width:14px;height:14px;"><use href="#icon-${c.icon}"/></svg></div>
     <div><div class="nav-item-name">${c.name}</div><div class="nav-item-meta">${c.meta}</div></div>
   </li>`).join("");
 
