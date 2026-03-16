@@ -1,13 +1,11 @@
 ```
- ______        __        ______      __    __        ______    
-/\  ___\      /\ \      /\__  _\    /\ "-./  \      /\  __ \   
-\ \ \__ \     \ \ \     \/_/\ \/    \ \ \-./\ \     \ \  __ \  
- \ \_____\     \ \_\       \ \_\     \ \_\ \ \_\     \ \_\ \_\ 
-  \/_____/      \/_/        \/_/      \/_/  \/_/      \/_/\/_/ 
-                                                                                                 
+ ______     __     ______   __    __     ______
+/\  ___\   /\ \   /\__  _\ /\ "-./  \   /\  __ \
+\ \ \__ \  \ \ \  \/_/\ \/ \ \ \-./\ \  \ \  __ \
+ \ \_____\  \ \_\    \ \_\  \ \_\ \ \_\  \ \_\ \_\
+  \/_____/   \/_/     \/_/   \/_/  \/_/   \/_/\/_/
 
-
-       figma ↔ code. zero drift.
+  figma ↔ code. zero drift.
 ```
 
 Gitma keeps your Figma components and your React codebase in perfect sync. Designer changes a variant? You see the diff. Developer adds a prop? Gitma writes it to Figma. No copy-paste, no "did you update the component?", no drift.
