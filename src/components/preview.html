@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gitma — Component Preview</title>
+<title>Gitma — Design System</title>
 <style>
   :root {
     --color-error-background: #FEF1F1; --color-error-800: #991B1B; --color-error-300: #F87171;
@@ -17,150 +17,148 @@
     --radius-xs: 2px; --radius-sm: 4px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #1a1a1a; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #1a1a1a; overflow: hidden; height: 100vh; }
 
-  /* ===== List page ===== */
-  .nav { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
-  .nav-sidebar { background: #fff; border-right: 1px solid #e5e5e5; padding: 24px; display: flex; flex-direction: column; }
-  .nav-sidebar h1 { font-size: 16px; margin-bottom: 4px; }
-  .nav-sidebar .subtitle { font-size: 11px; color: #999; margin-bottom: 20px; }
-  .nav-list { list-style: none; flex: 1; }
-  .nav-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
-  .nav-item:hover { background: #f5f5f5; }
-  .nav-item-name { font-size: 14px; font-weight: 500; }
-  .nav-item-meta { font-size: 11px; color: #999; }
-  .nav-main { padding: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .nav-main .empty h2 { font-size: 20px; color: #333; margin-bottom: 8px; }
-  .nav-main .empty p { color: #999; font-size: 14px; }
+  /* ===== Shell: fixed panels, only center scrolls ===== */
+  .shell { display: grid; height: 100vh; overflow: hidden; }
+  .shell--list { grid-template-columns: 260px 1fr; }
+  .shell--component { grid-template-columns: 260px 1fr 320px; }
+  .shell--tokens { grid-template-columns: 240px 1fr; }
 
-  /* ===== Component view — 3 columns ===== */
-  .comp-view { display: grid; grid-template-columns: 260px 1fr 320px; min-height: 100vh; }
-  .col-left { background: #fff; border-right: 1px solid #e5e5e5; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
-  .col-center { display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; background: #fff; position: relative; }
-  .col-right { background: #fff; border-left: 1px solid #e5e5e5; padding: 0; overflow-y: auto; font-size: 11px; }
+  .col-left { background: #fff; border-right: 1px solid #e5e5e5; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; }
+  .col-center { overflow-y: auto; height: 100vh; position: relative; }
+  .col-right { background: #fff; border-left: 1px solid #e5e5e5; overflow-y: auto; height: 100vh; font-size: 11px; }
 
-  /* Left sidebar */
+  /* ===== Shared sidebar styles ===== */
   .back-btn { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #666; cursor: pointer; padding: 4px 0; margin-bottom: 12px; border: none; background: none; }
   .back-btn:hover { color: #1a1a1a; }
   .back-btn svg { width: 12px; height: 12px; }
   .comp-title { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
   .comp-title h1 { font-size: 16px; }
-  .figma-link { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: background 0.15s; }
+  .figma-link { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
   .figma-link:hover { background: #f0f0f0; }
   .figma-link svg { width: 14px; height: 14px; }
   .comp-meta { font-size: 11px; color: #999; margin-bottom: 14px; }
-
   .control { margin-bottom: 14px; }
   .control label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 5px; }
   .control input[type="text"] { width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; outline: none; }
   .control input[type="text"]:focus { border-color: #999; }
   .chips { display: flex; flex-wrap: wrap; gap: 3px; }
-  .chip { padding: 3px 8px; border-radius: 100px; font-size: 10px; border: 1px solid #ddd; background: #fff; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .chip { padding: 3px 8px; border-radius: 100px; font-size: 10px; border: 1px solid #ddd; background: #fff; cursor: pointer; user-select: none; }
   .chip:hover { border-color: #999; }
   .chip.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
   .toggle-row { display: flex; align-items: center; gap: 6px; }
-  .toggle { width: 28px; height: 16px; border-radius: 8px; background: #ddd; cursor: pointer; position: relative; transition: background 0.15s; }
+  .toggle { width: 28px; height: 16px; border-radius: 8px; background: #ddd; cursor: pointer; position: relative; }
   .toggle.active { background: #1a1a1a; }
-  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+  .toggle::after { content:''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
   .toggle.active::after { transform: translateX(12px); }
   .toggle-label { font-size: 11px; }
   .divider { border: none; border-top: 1px solid #eee; margin: 12px 0; }
-  .icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
+  .icon-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 2px; }
   .icon-option { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; border-radius: 4px; cursor: pointer; background: #fff; }
   .icon-option:hover { border-color: #999; }
   .icon-option.active { border-color: #1a1a1a; background: #f0f0f0; }
   .icon-option svg { width: 12px; height: 12px; }
-
-  /* Powered by */
   .powered { margin-top: auto; padding-top: 16px; border-top: 1px solid #eee; text-align: center; }
-  .powered a { font-size: 10px; color: #999; text-decoration: none; letter-spacing: 0.03em; }
-  .powered a:hover { color: #666; }
+  .powered a { font-size: 10px; color: #999; text-decoration: none; }
   .powered a span { font-weight: 600; color: #666; }
   .powered a:hover span { color: #1a1a1a; }
 
-  /* Preview card */
-  .preview-area { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-  .preview-label { font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: 0.05em; position: absolute; top: 12px; left: 16px; }
+  /* Nav list */
+  .nav-list { list-style: none; }
+  .nav-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 2px; }
+  .nav-item:hover { background: #f5f5f5; }
+  .nav-item-name { font-size: 13px; font-weight: 500; }
+  .nav-item-meta { font-size: 10px; color: #999; }
+  .nav-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #999; padding: 12px 0 4px; }
 
-  /* Code — docked to bottom */
-  .code-dock {
-    position: fixed; bottom: 0; left: 260px; right: 320px; z-index: 10;
-    background: #1a1a1a; border-top: 1px solid #333;
-    transition: transform 0.2s;
-  }
-  .code-dock-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 16px; user-select: none;
-  }
+  /* Center: preview area */
+  .preview-area { display: flex; align-items: center; justify-content: center; padding: 1rem; min-height: calc(100vh - 60px); background: #fff; }
+  .preview-label { font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: 0.05em; position: absolute; top: 12px; left: 16px; }
+  .empty-center { display: flex; align-items: center; justify-content: center; height: 100vh; background: #fff; }
+  .empty-center h2 { font-size: 18px; color: #333; margin-bottom: 4px; }
+  .empty-center p { font-size: 13px; color: #999; }
+
+  /* Code dock */
+  .code-dock { position: fixed; bottom: 0; z-index: 10; background: #1a1a1a; border-top: 1px solid #333; display: none; }
+  .code-dock.show { display: block; }
+  .code-dock-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; }
   .code-dock-header span { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
   .code-dock-left { display: flex; align-items: center; gap: 8px; cursor: pointer; }
   .code-dock-left:hover span { color: #999; }
-  .code-copy {
-    padding: 3px 8px; font-size: 10px; color: #999; background: #2a2a2a; border: 1px solid #444;
-    border-radius: 4px; cursor: pointer; transition: all 0.15s;
-  }
+  .code-copy { padding: 3px 8px; font-size: 10px; color: #999; background: #2a2a2a; border: 1px solid #444; border-radius: 4px; cursor: pointer; }
   .code-copy:hover { color: #fff; border-color: #666; }
   .code-copy.copied { color: #4ade80; border-color: #4ade80; }
   .code-dock-body { padding: 12px 18px; max-height: 280px; overflow-y: auto; }
   .code-panel { color: #e5e5e5; font-family: "SF Mono","Fira Code",monospace; font-size: 11px; line-height: 1.5; white-space: pre; margin: 0; }
-  /* Adjust center column to not be hidden behind dock */
-  .col-center { padding-bottom: 80px; }
   .kw { color: #c792ea; } .str { color: #c3e88d; } .comp { color: #82aaff; } .prop { color: #f78c6c; } .tag { color: #89ddff; }
 
-  /* Right column — inspect sections */
+  /* Inspect */
   .inspect-section-header { padding: 10px 16px 6px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #999; border-bottom: 1px solid #f0f0f0; background: #fafafa; }
   .inspect-section-body { padding: 10px 16px 14px; border-bottom: 1px solid #eee; }
   .inspect-row { display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid #f8f8f8; gap: 8px; }
   .inspect-row:last-child { border-bottom: none; }
   .inspect-prop { width: 90px; color: #999; flex-shrink: 0; font-size: 11px; }
-  .inspect-val-group { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-  .inspect-value { color: #1a1a1a; font-family: monospace; font-size: 10px; }
-  .inspect-value--raw { color: #999; font-family: monospace; font-size: 9px; }
   .inspect-token { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #6d28d9; background: #f3ecff; padding: 2px 6px; border-radius: 3px; font-family: monospace; word-break: break-all; }
+  .inspect-value--raw { color: #999; font-family: monospace; font-size: 9px; }
   .inspect-hardcoded { display: inline-flex; align-items: center; gap: 4px; color: #1a1a1a; font-family: monospace; font-size: 10px; }
   .inspect-swatch { width: 10px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
   .inspect-sub { font-size: 9px; font-weight: 600; color: #bbb; padding: 10px 0 4px; text-transform: uppercase; letter-spacing: 0.04em; }
 
-  /* Matrix */
-  .matrix { margin-top: 20px; width: 100%; max-width: 650px; }
-  .matrix h3 { font-size: 11px; color: #999; margin-bottom: 8px; text-align: center; }
-  .matrix table { border-collapse: collapse; width: 100%; }
-  .matrix th { font-size: 9px; color: #999; font-weight: 500; padding: 3px 5px; text-align: left; }
-  .matrix td { padding: 5px; }
-
-  /* Context menu */
-  .menu-context { background: #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); padding: 4px; width: 200px; margin-top: 16px; }
+  /* ===== Token page styles ===== */
+  .token-main { padding: 32px; }
+  .token-stats { display: flex; gap: 12px; margin-bottom: 24px; }
+  .token-stat { background: #fff; border-radius: 8px; padding: 12px 16px; flex: 1; }
+  .token-stat-value { font-size: 20px; font-weight: 600; }
+  .token-stat-label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
+  .color-scale { display: flex; gap: 1px; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  .color-scale-item { flex: 1; height: 48px; position: relative; cursor: pointer; transition: transform 0.15s; }
+  .color-scale-item:hover { transform: scaleY(1.15); z-index: 1; }
+  .color-scale-label { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center; font-size: 8px; font-weight: 600; opacity: 0; transition: opacity 0.15s; }
+  .color-scale-item:hover .color-scale-label { opacity: 1; }
+  .token-grid { display: flex; flex-direction: column; gap: 1px; background: #eee; border-radius: 8px; overflow: hidden; }
+  .token-row { display: grid; grid-template-columns: 1fr 140px 140px 40px; align-items: center; padding: 10px 16px; background: #fff; gap: 12px; }
+  .token-row.header { background: #fafafa; position: sticky; top: 0; z-index: 1; }
+  .token-row.header span { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
+  .token-name { font-family: monospace; font-size: 12px; }
+  .token-path { font-size: 10px; color: #999; margin-top: 1px; }
+  .token-desc { font-size: 10px; color: #7c3aed; margin-top: 2px; font-style: italic; }
+  .token-value { font-family: monospace; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+  .token-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); flex-shrink: 0; }
+  .token-hex { color: #555; }
+  .token-copy { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; cursor: pointer; border-radius: 4px; color: #ccc; }
+  .token-copy:hover { background: #f0f0f0; color: #666; }
+  .token-copy.copied { color: #4ade80; }
+  .token-copy svg { width: 14px; height: 14px; }
+  .mode-toggle { display: flex; gap: 2px; background: #f0f0f0; border-radius: 6px; padding: 2px; margin-bottom: 14px; }
+  .mode-btn { flex: 1; padding: 5px; text-align: center; font-size: 11px; border: none; background: transparent; border-radius: 4px; cursor: pointer; color: #666; }
+  .mode-btn.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .cat-item { padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; color: #444; display: flex; align-items: center; justify-content: space-between; }
+  .cat-item:hover { background: #f5f5f5; }
+  .cat-item.active { background: #1a1a1a; color: #fff; }
+  .cat-count { font-size: 10px; color: #999; }
+  .cat-item.active .cat-count { color: #888; }
+  .token-empty { text-align: center; padding: 48px; color: #999; }
 
   /* Badge */
-  .badge { display: inline-flex; align-items: center; gap: var(--spacing-1); padding-block: var(--spacing-1); padding-inline: var(--spacing-2); border-radius: var(--radius-xs); font-family: Roboto, sans-serif; font-weight: 400; line-height: 1.4; border: none; white-space: nowrap; }
+  .badge { display: inline-flex; align-items: center; gap: var(--spacing-1); padding-block: var(--spacing-1); padding-inline: var(--spacing-2); border-radius: var(--radius-xs); font-family: Roboto,sans-serif; font-weight: 400; line-height: 1.4; border: none; white-space: nowrap; }
   .badge--sm { font-size: 10px; } .badge--md { font-size: 12px; } .badge--lg { font-size: 14px; } .badge--xl { font-size: 16px; }
-  .badge--sm .badge__icon { width: 12px; height: 12px; } .badge--md .badge__icon { width: 14px; height: 14px; }
-  .badge--lg .badge__icon { width: 16px; height: 16px; } .badge--xl .badge__icon { width: 18px; height: 18px; }
-  .badge__icon { display: flex; align-items: center; justify-content: center; } .badge__icon svg { width: 100%; height: 100%; }
-  .badge--error { background: var(--color-error-background); color: var(--color-error-800); }
-  .badge--error.badge--outlined { border: 1px solid var(--color-error-300); }
-  .badge--warning { background: var(--color-warning-background); color: var(--color-warning-800); }
-  .badge--warning.badge--outlined { border: 1px solid var(--color-warning-300); }
-  .badge--success { background: var(--color-success-background); color: var(--color-success-800); }
-  .badge--success.badge--outlined { border: 1px solid var(--color-success-300); }
-  .badge--info { background: var(--color-info-background); color: var(--color-info-800); }
-  .badge--info.badge--outlined { border: 1px solid var(--color-info-300); }
-  .badge--muted { background: var(--color-background-muted); color: var(--color-background-800); }
-  .badge--muted.badge--outlined { border: 1px solid var(--color-background-300); }
+  .badge--sm .badge__icon{width:12px;height:12px} .badge--md .badge__icon{width:14px;height:14px} .badge--lg .badge__icon{width:16px;height:16px} .badge--xl .badge__icon{width:18px;height:18px}
+  .badge__icon{display:flex;align-items:center;justify-content:center} .badge__icon svg{width:100%;height:100%}
+  .badge--error{background:var(--color-error-background);color:var(--color-error-800)} .badge--error.badge--outlined{border:1px solid var(--color-error-300)}
+  .badge--warning{background:var(--color-warning-background);color:var(--color-warning-800)} .badge--warning.badge--outlined{border:1px solid var(--color-warning-300)}
+  .badge--success{background:var(--color-success-background);color:var(--color-success-800)} .badge--success.badge--outlined{border:1px solid var(--color-success-300)}
+  .badge--info{background:var(--color-info-background);color:var(--color-info-800)} .badge--info.badge--outlined{border:1px solid var(--color-info-300)}
+  .badge--muted{background:var(--color-background-muted);color:var(--color-background-800)} .badge--muted.badge--outlined{border:1px solid var(--color-background-300)}
 
   /* MenuItem */
-  .menu-item { display: flex; align-items: center; gap: var(--spacing-2); padding: var(--spacing-3); border-radius: var(--radius-sm); background: var(--color-background-0); color: var(--color-typography-700); font-family: Roboto, sans-serif; font-weight: 400; cursor: pointer; border: none; width: 100%; text-align: left; transition: background-color 0.15s; }
-  .menu-item:hover:not(.menu-item--disabled):not(.menu-item--force) { background: var(--color-background-50); }
-  .menu-item:active:not(.menu-item--disabled):not(.menu-item--force) { background: var(--color-background-100); }
-  .menu-item--force-hover { background: var(--color-background-50) !important; }
-  .menu-item--force-active { background: var(--color-background-100) !important; }
-  .menu-item--disabled { color: var(--color-typography-400); cursor: default; opacity: 0.7; }
-  .menu-item--disabled:hover,.menu-item--disabled:active { background: var(--color-background-0); }
-  .menu-item--sm { font-size: 14px; } .menu-item--md { font-size: 16px; }
-  .menu-item--right { flex-direction: row-reverse; }
-  .menu-item__icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; } .menu-item__icon svg { width: 100%; height: 100%; }
-
-  .page { display: none; } .page.active { display: block; min-height: 100vh; }
+  .menu-item{display:flex;align-items:center;gap:var(--spacing-2);padding:var(--spacing-3);border-radius:var(--radius-sm);background:var(--color-background-0);color:var(--color-typography-700);font-family:Roboto,sans-serif;font-weight:400;cursor:pointer;border:none;width:100%;text-align:left;transition:background-color .15s}
+  .menu-item:hover:not(.menu-item--disabled):not(.menu-item--force){background:var(--color-background-50)}
+  .menu-item:active:not(.menu-item--disabled):not(.menu-item--force){background:var(--color-background-100)}
+  .menu-item--force-hover{background:var(--color-background-50)!important} .menu-item--force-active{background:var(--color-background-100)!important}
+  .menu-item--disabled{color:var(--color-typography-400);cursor:default;opacity:.7} .menu-item--disabled:hover,.menu-item--disabled:active{background:var(--color-background-0)}
+  .menu-item--sm{font-size:14px} .menu-item--md{font-size:16px} .menu-item--right{flex-direction:row-reverse}
+  .menu-item__icon{width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0} .menu-item__icon svg{width:100%;height:100%}
 </style>
 </head>
 <body>
@@ -179,201 +177,135 @@
   <symbol id="icon-home" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 7.5L8 2.5l5.5 5M4 6.5V13h3v-3h2v3h3V6.5"/></symbol>
   <symbol id="icon-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3.5 8.5l3 3 6-7"/></symbol>
   <symbol id="icon-arrow-left" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="13" y1="8" x2="3" y2="8"/><polyline points="7,4 3,8 7,12"/></symbol>
-  <symbol id="icon-menu" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></symbol>
+  <symbol id="icon-copy" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="8" height="8" rx="1.5"/><path d="M3 11V3h8"/></symbol>
   <symbol id="icon-figma" viewBox="0 0 38 57" fill="none"><path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill="#A259FF"/></symbol>
 </svg>
 
-<!-- ==================== LIST PAGE ==================== -->
-<div class="page active" id="page-list">
-  <div class="nav">
-    <aside class="nav-sidebar">
-      <h1>Gitma Preview</h1>
-      <p class="subtitle">Generated from Figma</p>
-      <hr class="divider">
-      <p style="font-size: 10px; color: #999; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;">Components</p>
-      <ul class="nav-list" id="component-list"></ul>
-      <div class="powered"><a href="https://github.com/lucadebort/gitma" target="_blank">POWERED BY <span>GITMA</span></a></div>
-    </aside>
-    <main class="nav-main"><div class="empty"><h2>Select a component</h2><p>Click a component from the sidebar to preview it.</p></div></main>
-  </div>
+<!-- Single shell container — JS swaps layout class and content -->
+<div class="shell shell--list" id="shell">
+  <aside class="col-left" id="sidebar"></aside>
+  <main class="col-center" id="center"></main>
+  <aside class="col-right" id="rightpanel" style="display:none;"></aside>
 </div>
 
-<!-- ==================== BADGE PAGE ==================== -->
-<div class="page" id="page-badge">
-  <div class="comp-view">
-    <aside class="col-left">
-      <button class="back-btn" onclick="showPage('list')"><svg><use href="#icon-arrow-left"/></svg> All components</button>
-      <div class="comp-title">
-        <h1>Badge</h1>
-        <a href="https://www.figma.com/design/i0LFW1SVyxYa8EpQfjnIbZ?node-id=656:4229" target="_blank" class="figma-link" title="View in Figma"><svg><use href="#icon-figma"/></svg></a>
-      </div>
-      <p class="comp-meta">5 actions, 4 sizes, 2 variants</p>
-      <hr class="divider">
-      <div class="control"><label>Label</label><input type="text" id="badge-label" value="NEW FEATURE"></div>
-      <div class="control"><label>Action</label><div class="chips" data-comp="badge" data-prop="action">
-        <div class="chip active" data-value="error">Error</div><div class="chip" data-value="warning">Warning</div>
-        <div class="chip" data-value="success">Success</div><div class="chip" data-value="info">Info</div>
-        <div class="chip" data-value="muted">Muted</div>
-      </div></div>
-      <div class="control"><label>Size</label><div class="chips" data-comp="badge" data-prop="size">
-        <div class="chip" data-value="sm">sm</div><div class="chip active" data-value="md">md</div>
-        <div class="chip" data-value="lg">lg</div><div class="chip" data-value="xl">xl</div>
-      </div></div>
-      <div class="control"><label>Variant</label><div class="chips" data-comp="badge" data-prop="variant">
-        <div class="chip active" data-value="solid">Solid</div><div class="chip" data-value="outlined">Outlined</div>
-      </div></div>
-      <hr class="divider">
-      <div class="control"><label>Options</label><div style="display:flex;flex-direction:column;gap:6px;">
-        <div class="toggle-row"><div class="toggle active" data-comp="badge" data-prop="iconLeft"></div><span class="toggle-label">Icon Left</span></div>
-        <div class="toggle-row"><div class="toggle" data-comp="badge" data-prop="iconRight"></div><span class="toggle-label">Icon Right</span></div>
-      </div></div>
-      <div class="powered"><a href="https://github.com/lucadebort/gitma" target="_blank">POWERED BY <span>GITMA</span></a></div>
-    </aside>
-    <main class="col-center">
-      <div class="preview-area"><div class="preview-label">Preview</div><div id="badge-preview"></div></div>
-    </main>
-    <aside class="col-right" id="badge-inspect"></aside>
-  </div>
-</div>
-
-<!-- ==================== MENUITEM PAGE ==================== -->
-<div class="page" id="page-menuitem">
-  <div class="comp-view">
-    <aside class="col-left">
-      <button class="back-btn" onclick="showPage('list')"><svg><use href="#icon-arrow-left"/></svg> All components</button>
-      <div class="comp-title">
-        <h1>Menu Item</h1>
-        <a href="https://www.figma.com/design/i0LFW1SVyxYa8EpQfjnIbZ?node-id=672:3960" target="_blank" class="figma-link" title="View in Figma"><svg><use href="#icon-figma"/></svg></a>
-      </div>
-      <p class="comp-meta">4 states, 2 sizes, icon swap</p>
-      <hr class="divider">
-      <div class="control"><label>Label</label><input type="text" id="mi-label" value="Add account"></div>
-      <div class="control"><label>Icon Placement</label><div class="chips" data-comp="mi" data-prop="iconPlacement">
-        <div class="chip active" data-value="left">Left</div><div class="chip" data-value="right">Right</div>
-      </div></div>
-      <div class="control"><label>Size</label><div class="chips" data-comp="mi" data-prop="size">
-        <div class="chip active" data-value="sm">sm</div><div class="chip" data-value="md">md</div>
-      </div></div>
-      <div class="control"><label>State</label><div class="chips" data-comp="mi" data-prop="state">
-        <div class="chip active" data-value="default">Default</div><div class="chip" data-value="hover">Hover</div>
-        <div class="chip" data-value="active">Active</div><div class="chip" data-value="disabled">Disabled</div>
-      </div></div>
-      <hr class="divider">
-      <div class="control"><label>Show Icon</label><div class="toggle-row"><div class="toggle active" data-comp="mi" data-prop="showIcon"></div><span class="toggle-label">Visible</span></div></div>
-      <div class="control" id="mi-icon-swap"><label>Icon (instance swap)</label><div class="icon-grid" data-comp="mi" data-prop="icon">
-        <div class="icon-option active" data-value="plus"><svg><use href="#icon-plus"/></svg></div>
-        <div class="icon-option" data-value="user"><svg><use href="#icon-user"/></svg></div>
-        <div class="icon-option" data-value="settings"><svg><use href="#icon-settings"/></svg></div>
-        <div class="icon-option" data-value="trash"><svg><use href="#icon-trash"/></svg></div>
-        <div class="icon-option" data-value="edit"><svg><use href="#icon-edit"/></svg></div>
-        <div class="icon-option" data-value="star"><svg><use href="#icon-star"/></svg></div>
-        <div class="icon-option" data-value="mail"><svg><use href="#icon-mail"/></svg></div>
-        <div class="icon-option" data-value="globe"><svg><use href="#icon-globe"/></svg></div>
-        <div class="icon-option" data-value="heart"><svg><use href="#icon-heart"/></svg></div>
-        <div class="icon-option" data-value="search"><svg><use href="#icon-search"/></svg></div>
-        <div class="icon-option" data-value="home"><svg><use href="#icon-home"/></svg></div>
-        <div class="icon-option" data-value="check"><svg><use href="#icon-check"/></svg></div>
-      </div></div>
-      <div class="powered"><a href="https://github.com/lucadebort/gitma" target="_blank">POWERED BY <span>GITMA</span></a></div>
-    </aside>
-    <main class="col-center">
-      <div class="preview-area"><div class="preview-label">Preview</div><div id="mi-preview" style="width:200px;"></div></div>
-    </main>
-    <aside class="col-right" id="mi-inspect"></aside>
-  </div>
-</div>
-
-<!-- Code dock (fixed bottom) -->
-<div class="code-dock" id="code-dock" style="display:none;">
+<!-- Code dock -->
+<div class="code-dock" id="code-dock">
   <div class="code-dock-header">
-    <div class="code-dock-left" onclick="toggleCodeDock()">
-      <span>Code</span>
-      <span id="code-dock-toggle" style="font-size:14px;color:#555;">&#9660;</span>
-    </div>
-    <button class="code-copy" id="code-copy-btn" onclick="copyCode()">Copy</button>
+    <div class="code-dock-left" onclick="toggleDock()"><span>Code</span><span id="dock-arrow" style="font-size:14px;color:#555">&#9660;</span></div>
+    <button class="code-copy" id="copy-btn" onclick="copyCode()">Copy</button>
   </div>
-  <div class="code-dock-body" id="code-dock-body">
-    <div class="code-panel" id="code-output"></div>
-  </div>
+  <div class="code-dock-body" id="dock-body"><div class="code-panel" id="code-output"></div></div>
 </div>
 
+<script src="token-data.js"></script>
 <script>
-function copyCode() {
-  const el = document.getElementById("code-output");
-  const text = el.innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById("code-copy-btn");
-    btn.textContent = "Copied!";
-    btn.classList.add("copied");
-    setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
-  });
-}
+// ==================== TOKEN DATA ====================
+// GITMA_TOKEN_DATA is loaded from token-data.js (generated by /gitma preview from Figma)
 
-let codeDockOpen = true;
-function toggleCodeDock() {
-  codeDockOpen = !codeDockOpen;
-  document.getElementById("code-dock-body").style.display = codeDockOpen ? "" : "none";
-  document.getElementById("code-dock-toggle").innerHTML = codeDockOpen ? "&#9660;" : "&#9650;";
-}
+// ==================== STATE ====================
+let currentPage = "list"; // "list" | "badge" | "menuitem" | "tokens"
+const bs = {label:"NEW FEATURE",action:"error",size:"md",variant:"solid",iconLeft:true,iconRight:false};
+const ms = {label:"Add account",icon:"plus",iconPlacement:"left",size:"sm",state:"default",showIcon:true};
+let tokenMode = "Light";
+let tokenCat = null;
+let tokenSearch = "";
 
-// ===== Nav =====
-const components = [
-  { id: "badge", name: "Badge", meta: "5 actions, 4 sizes, 2 variants" },
-  { id: "menuitem", name: "Menu Item", meta: "4 states, 2 sizes, icon swap" },
-];
-document.getElementById("component-list").innerHTML = components.map(c => `
-  <li class="nav-item" onclick="showPage('${c.id}')">
-    <div><div class="nav-item-name">${c.name}</div><div class="nav-item-meta">${c.meta}</div></div>
-  </li>`).join("");
-
-let currentPage = "list";
+// ==================== NAVIGATION ====================
 function showPage(id) {
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.getElementById("page-" + id).classList.add("active");
   currentPage = id;
-  document.getElementById("code-dock").style.display = id === "list" ? "none" : "";
-  if (id === "badge") updateBadge();
-  if (id === "menuitem") updateMI();
+  const shell = document.getElementById("shell");
+  const right = document.getElementById("rightpanel");
+  const dock = document.getElementById("code-dock");
+
+  if (id === "list") {
+    shell.className = "shell shell--list";
+    right.style.display = "none";
+    dock.classList.remove("show");
+    dock.style.left = "260px"; dock.style.right = "0";
+    renderListSidebar();
+    renderListCenter();
+  } else if (id === "tokens") {
+    shell.className = "shell shell--tokens";
+    right.style.display = "none";
+    dock.classList.remove("show");
+    dock.style.left = "240px"; dock.style.right = "0";
+    renderTokenSidebar();
+    renderTokenCenter();
+  } else {
+    shell.className = "shell shell--component";
+    right.style.display = "";
+    dock.classList.add("show");
+    dock.style.left = "260px"; dock.style.right = "320px";
+    if (id === "badge") { renderBadgeSidebar(); renderBadgeCenter(); renderBadgeInspect(); updateBadgeCode(); }
+    if (id === "menuitem") { renderMISidebar(); renderMICenter(); renderMIInspect(); updateMICode(); }
+  }
 }
 
-// ===== Helpers =====
+// ==================== LIST PAGE ====================
+const components = [
+  {id:"badge",name:"Badge",meta:"5 actions, 4 sizes, 2 variants"},
+  {id:"menuitem",name:"Menu Item",meta:"4 states, 2 sizes, icon swap"},
+];
+
+function renderListSidebar() {
+  document.getElementById("sidebar").innerHTML = `
+    <h1 style="font-size:16px;margin-bottom:2px;">Gitma</h1>
+    <p style="font-size:11px;color:#999;margin-bottom:16px;">Design System Preview</p>
+    <hr class="divider">
+    <div class="nav-section">Foundations</div>
+    <ul class="nav-list"><li class="nav-item" onclick="showPage('tokens')"><div class="nav-item-name">Design Tokens</div><div class="nav-item-meta">192 tokens, Light/Dark</div></li></ul>
+    <div class="nav-section">Components</div>
+    <ul class="nav-list">${components.map(c=>`<li class="nav-item" onclick="showPage('${c.id}')"><div class="nav-item-name">${c.name}</div><div class="nav-item-meta">${c.meta}</div></li>`).join("")}</ul>
+    <div class="powered"><a href="https://github.com/lucadebort/gitma" target="_blank">POWERED BY <span>GITMA</span></a></div>`;
+}
+function renderListCenter() {
+  document.getElementById("center").innerHTML = `<div class="empty-center"><div style="text-align:center"><h2>Select a component</h2><p>Click from the sidebar to preview.</p></div></div>`;
+}
+
+// ==================== BADGE ====================
+const bIcon=`<span class="badge__icon"><svg><use href="#icon-globe"/></svg></span>`;
+const bTk={error:{bg:"Error/error background",text:"Error/error800",border:"Error/error300",bgH:"#FEF1F1",textH:"#991B1B",borderH:"#F87171"},warning:{bg:"Warning/warning background",text:"Warning/warning800",border:"Warning/warning300",bgH:"#FFF3EA",textH:"#824417",borderH:"#FDBA74"},success:{bg:"Success/success background",text:"Success/success800",border:"Success/success300",bgH:"#EDFCF2",textH:"#166534",borderH:"#6EE7B7"},info:{bg:"Info/info background",text:"Info/info800",border:"Info/info300",bgH:"#EBF8FE",textH:"#075A83",borderH:"#7DD3FC"},muted:{bg:"Background/background muted",text:"Background/background800",border:"Background/background300",bgH:"#F7F8F7",textH:"#414040",borderH:"#D4D4D4"}};
+const bSz={sm:{fs:10,ic:12,h:20},md:{fs:12,ic:14,h:22},lg:{fs:14,ic:16,h:29},xl:{fs:16,ic:18,h:34}};
+
+function renderBadge(o){o={...bs,...o};return `<span class="badge badge--${o.size} badge--${o.action}${o.variant==="outlined"?" badge--outlined":""}">${o.iconLeft?bIcon:""}<span>${o.label}</span>${o.iconRight?bIcon:""}</span>`;}
+function renderBadgeSidebar(){
+  document.getElementById("sidebar").innerHTML=`
+    <button class="back-btn" onclick="showPage('list')"><svg><use href="#icon-arrow-left"/></svg> All</button>
+    <div class="comp-title"><h1>Badge</h1><a href="https://www.figma.com/design/i0LFW1SVyxYa8EpQfjnIbZ?node-id=656:4229" target="_blank" class="figma-link" title="View in Figma"><svg><use href="#icon-figma"/></svg></a></div>
+    <p class="comp-meta">5 actions, 4 sizes, 2 variants</p><hr class="divider">
+    <div class="control"><label>Label</label><input type="text" value="${bs.label}" oninput="bs.label=this.value;updBadge()"></div>
+    <div class="control"><label>Action</label><div class="chips" id="bc-action">${["error","warning","success","info","muted"].map(v=>`<div class="chip${bs.action===v?" active":""}" onclick="bs.action='${v}';updBadge()">${v[0].toUpperCase()+v.slice(1)}</div>`).join("")}</div></div>
+    <div class="control"><label>Size</label><div class="chips">${["sm","md","lg","xl"].map(v=>`<div class="chip${bs.size===v?" active":""}" onclick="bs.size='${v}';updBadge()">${v}</div>`).join("")}</div></div>
+    <div class="control"><label>Variant</label><div class="chips">${["solid","outlined"].map(v=>`<div class="chip${bs.variant===v?" active":""}" onclick="bs.variant='${v}';updBadge()">${v[0].toUpperCase()+v.slice(1)}</div>`).join("")}</div></div>
+    <hr class="divider">
+    <div class="control"><label>Options</label><div style="display:flex;flex-direction:column;gap:6px">
+      <div class="toggle-row"><div class="toggle${bs.iconLeft?" active":""}" onclick="bs.iconLeft=!bs.iconLeft;updBadge()"></div><span class="toggle-label">Icon Left</span></div>
+      <div class="toggle-row"><div class="toggle${bs.iconRight?" active":""}" onclick="bs.iconRight=!bs.iconRight;updBadge()"></div><span class="toggle-label">Icon Right</span></div>
+    </div></div>
+    <div class="powered"><a href="https://github.com/lucadebort/gitma" target="_blank">POWERED BY <span>GITMA</span></a></div>`;
+}
+function renderBadgeCenter(){document.getElementById("center").innerHTML=`<div class="preview-label">PREVIEW</div><div class="preview-area" id="badge-pv">${renderBadge(bs)}</div>`;}
+function updBadge(){renderBadgeSidebar();renderBadgeCenter();renderBadgeInspect();updateBadgeCode();}
+
+// Inspect helpers
 function sw(c){return `<span class="inspect-swatch" style="background:${c}"></span>`;}
-function irmt(p,v,tokens){
-  const badges=tokens.map(t=>`<span class="inspect-token">${t}</span>`).join(" ");
-  return `<div class="inspect-row"><span class="inspect-prop">${p}</span><div class="inspect-val-group"><div style="display:flex;gap:4px;flex-wrap:wrap;">${badges}</div><span class="inspect-value--raw">${v}</span></div></div>`;
-}
-function ir(p,v,token){
-  if(token){
-    return `<div class="inspect-row"><span class="inspect-prop">${p}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="inspect-token">${token}</span><span class="inspect-value--raw">${v}</span></div></div>`;
-  }
-  return `<div class="inspect-row"><span class="inspect-prop">${p}</span><span class="inspect-hardcoded">${v}</span></div>`;
-}
-function irc(p,hex,token){
-  if(token){
-    return `<div class="inspect-row"><span class="inspect-prop">${p}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="inspect-token">${sw(hex)}${token}</span><span class="inspect-value--raw">${hex}</span></div></div>`;
-  }
-  return `<div class="inspect-row"><span class="inspect-prop">${p}</span><span class="inspect-hardcoded">${sw(hex)}${hex}</span></div>`;
-}
+function irmt(p,v,tokens){const b=tokens.map(t=>`<span class="inspect-token">${t}</span>`).join(" ");return `<div class="inspect-row"><span class="inspect-prop">${p}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${b} <span class="inspect-value--raw">${v}</span></div></div>`;}
+function ir(p,v,token){if(token)return `<div class="inspect-row"><span class="inspect-prop">${p}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="inspect-token">${token}</span><span class="inspect-value--raw">${v}</span></div></div>`;return `<div class="inspect-row"><span class="inspect-prop">${p}</span><span class="inspect-hardcoded">${v}</span></div>`;}
+function irc(p,hex,token){if(token)return `<div class="inspect-row"><span class="inspect-prop">${p}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="inspect-token">${sw(hex)}${token}</span><span class="inspect-value--raw">${hex}</span></div></div>`;return `<div class="inspect-row"><span class="inspect-prop">${p}</span><span class="inspect-hardcoded">${sw(hex)}${hex}</span></div>`;}
 function ish(t){return `<div class="inspect-section-header">${t}</div>`;}
-function isb(html){return `<div class="inspect-section-body">${html}</div>`;}
+function isb(h){return `<div class="inspect-section-body">${h}</div>`;}
 function isub(t){return `<div class="inspect-sub">${t}</div>`;}
 
-// ===== Badge =====
-const bs = { label:"NEW FEATURE", action:"error", size:"md", variant:"solid", iconLeft:true, iconRight:false };
-const bIcon = `<span class="badge__icon"><svg><use href="#icon-globe"/></svg></span>`;
-const bTk = {
-  error:{bg:"Error/error background",text:"Error/error800",border:"Error/error300",bgH:"#FEF1F1",textH:"#991B1B",borderH:"#F87171"},
-  warning:{bg:"Warning/warning background",text:"Warning/warning800",border:"Warning/warning300",bgH:"#FFF3EA",textH:"#824417",borderH:"#FDBA74"},
-  success:{bg:"Success/success background",text:"Success/success800",border:"Success/success300",bgH:"#EDFCF2",textH:"#166534",borderH:"#6EE7B7"},
-  info:{bg:"Info/info background",text:"Info/info800",border:"Info/info300",bgH:"#EBF8FE",textH:"#075A83",borderH:"#7DD3FC"},
-  muted:{bg:"Background/background muted",text:"Background/background800",border:"Background/background300",bgH:"#F7F8F7",textH:"#414040",borderH:"#D4D4D4"},
-};
-const bSz = {sm:{fs:10,ic:12,h:20},md:{fs:12,ic:14,h:22},lg:{fs:14,ic:16,h:29},xl:{fs:16,ic:18,h:34}};
-
-function renderBadge(o){o={...bs,...o};const c=`badge badge--${o.size} badge--${o.action}${o.variant==="outlined"?" badge--outlined":""}`;return `<span class="${c}">${o.iconLeft?bIcon:""}<span>${o.label}</span>${o.iconRight?bIcon:""}</span>`;}
-
-function updateBadge(){
-  document.getElementById("badge-preview").innerHTML=renderBadge(bs);
+function renderBadgeInspect(){
+  const t=bTk[bs.action],s=bSz[bs.size];
+  let h=ish("Design")+isb(isub("Fill")+irc("background",t.bgH,t.bg)+irc("color",t.textH,t.text)+(bs.variant==="outlined"?isub("Stroke")+irc("border-color",t.borderH,t.border)+ir("border-width","1px",""):"")+isub("Corner")+ir("border-radius","2px","Border radius/xs"));
+  h+=ish("Layout")+isb(ir("direction","row","")+ir("gap","4px","Spacing/1")+irmt("padding","4px 8px",["Spacing/1","Spacing/2"])+ir("height",s.h+"px","")+(bs.iconLeft||bs.iconRight?isub("Icon")+ir("size",s.ic+"px",""):""));
+  const ln=[`background: var(--color-${bs.action==="muted"?"background-muted":bs.action+"-background"});`,`color: var(--color-${bs.action==="muted"?"background":bs.action}-800);`,`font-size: ${s.fs}px;`,`padding: var(--spacing-1) var(--spacing-2);`,`border-radius: var(--radius-xs);`,`gap: var(--spacing-1);`];
+  if(bs.variant==="outlined")ln.push(`border: 1px solid var(--color-${bs.action==="muted"?"background":bs.action}-300);`);
+  h+=ish("CSS")+isb(`<pre style="font-size:10px;line-height:1.6;margin:0;color:#555;font-family:'SF Mono',monospace">.badge {\n  ${ln.join("\n  ")}\n}</pre>`);
+  document.getElementById("rightpanel").innerHTML=h;
+}
+function updateBadgeCode(){
   const p=[`  <span class="prop">label</span>=<span class="str">"${bs.label}"</span>`];
   if(bs.action!=="error")p.push(`  <span class="prop">action</span>=<span class="str">"${bs.action}"</span>`);
   if(bs.size!=="sm")p.push(`  <span class="prop">size</span>=<span class="str">"${bs.size}"</span>`);
@@ -381,35 +313,39 @@ function updateBadge(){
   if(!bs.iconLeft)p.push(`  <span class="prop">iconLeft</span>={<span class="str">false</span>}`);
   if(bs.iconRight)p.push(`  <span class="prop">iconRight</span>={<span class="str">true</span>}`);
   document.getElementById("code-output").innerHTML=`<span class="tag">&lt;</span><span class="comp">Badge</span>\n${p.join("\n")}\n<span class="tag">/&gt;</span>`;
-  updateBadgeInspect();
 }
 
-function updateBadgeInspect(){
-  const t=bTk[bs.action],s=bSz[bs.size];
-  let h=ish("Design");
-  let design=isub("Fill")+irc("background",t.bgH,t.bg)+irc("color",t.textH,t.text);
-  if(bs.variant==="outlined")design+=isub("Stroke")+irc("border-color",t.borderH,t.border)+ir("border-width","1px","");
-  design+=isub("Corner")+ir("border-radius","2px","Border radius/xs");
-  h+=isb(design);
-  h+=ish("Layout");
-  let layout=ir("direction","row","")+ir("gap","4px","Spacing/1")+irmt("padding","4px 8px",["Spacing/1","Spacing/2"])+ir("height",s.h+"px","");
-  if(bs.iconLeft||bs.iconRight)layout+=isub("Icon")+ir("size",s.ic+"px","");
-  h+=isb(layout);
-  h+=ish("CSS");
-  const ln=[`background: var(--color-${bs.action==="muted"?"background-muted":bs.action+"-background"});`,`color: var(--color-${bs.action==="muted"?"background":bs.action}-800);`,`font-size: ${s.fs}px;`,`padding: var(--spacing-1) var(--spacing-2);`,`border-radius: var(--radius-xs);`,`gap: var(--spacing-1);`];
-  if(bs.variant==="outlined")ln.push(`border: 1px solid var(--color-${bs.action==="muted"?"background":bs.action}-300);`);
-  h+=isb(`<pre style="font-size:10px;line-height:1.6;margin:0;color:#555;font-family:'SF Mono',monospace;">.badge {\n  ${ln.join("\n  ")}\n}</pre>`);
-  document.getElementById("badge-inspect").innerHTML=h;
-}
-
-// ===== MenuItem =====
-const ms = {label:"Add account",icon:"plus",iconPlacement:"left",size:"sm",state:"default",showIcon:true};
+// ==================== MENUITEM ====================
 const iNames={plus:"PlusIcon",user:"UserIcon",settings:"SettingsIcon",trash:"TrashIcon",edit:"EditIcon",star:"StarIcon",mail:"MailIcon",globe:"GlobeIcon",heart:"HeartIcon",search:"SearchIcon",home:"HomeIcon",check:"CheckIcon"};
-
 function renderMI(o){o={...ms,...o};let c=`menu-item menu-item--${o.size}`;if(o.iconPlacement==="right")c+=" menu-item--right";if(o.state==="disabled")c+=" menu-item--disabled";if(o.state==="hover")c+=" menu-item--force menu-item--force-hover";if(o.state==="active")c+=" menu-item--force menu-item--force-active";const ic=o.showIcon?`<span class="menu-item__icon"><svg><use href="#icon-${o.icon}"/></svg></span>`:"";return `<button class="${c}">${ic}<span>${o.label}</span></button>`;}
-
-function updateMI(){
-  document.getElementById("mi-preview").innerHTML=renderMI(ms);
+function renderMISidebar(){
+  const iconGrid=Object.keys(iNames).map(k=>`<div class="icon-option${ms.icon===k?" active":""}" onclick="ms.icon='${k}';updMI()"><svg><use href="#icon-${k}"/></svg></div>`).join("");
+  document.getElementById("sidebar").innerHTML=`
+    <button class="back-btn" onclick="showPage('list')"><svg><use href="#icon-arrow-left"/></svg> All</button>
+    <div class="comp-title"><h1>Menu Item</h1><a href="https://www.figma.com/design/i0LFW1SVyxYa8EpQfjnIbZ?node-id=672:3960" target="_blank" class="figma-link" title="View in Figma"><svg><use href="#icon-figma"/></svg></a></div>
+    <p class="comp-meta">4 states, 2 sizes, icon swap</p><hr class="divider">
+    <div class="control"><label>Label</label><input type="text" value="${ms.label}" oninput="ms.label=this.value;updMI()"></div>
+    <div class="control"><label>Icon Placement</label><div class="chips">${["left","right"].map(v=>`<div class="chip${ms.iconPlacement===v?" active":""}" onclick="ms.iconPlacement='${v}';updMI()">${v[0].toUpperCase()+v.slice(1)}</div>`).join("")}</div></div>
+    <div class="control"><label>Size</label><div class="chips">${["sm","md"].map(v=>`<div class="chip${ms.size===v?" active":""}" onclick="ms.size='${v}';updMI()">${v}</div>`).join("")}</div></div>
+    <div class="control"><label>State</label><div class="chips">${["default","hover","active","disabled"].map(v=>`<div class="chip${ms.state===v?" active":""}" onclick="ms.state='${v}';updMI()">${v[0].toUpperCase()+v.slice(1)}</div>`).join("")}</div></div>
+    <hr class="divider">
+    <div class="control"><label>Show Icon</label><div class="toggle-row"><div class="toggle${ms.showIcon?" active":""}" onclick="ms.showIcon=!ms.showIcon;updMI()"></div><span class="toggle-label">Visible</span></div></div>
+    ${ms.showIcon?`<div class="control"><label>Icon (instance swap)</label><div class="icon-grid">${iconGrid}</div></div>`:""}
+    <div class="powered"><a href="https://github.com/lucadebort/gitma" target="_blank">POWERED BY <span>GITMA</span></a></div>`;
+}
+function renderMICenter(){document.getElementById("center").innerHTML=`<div class="preview-label">PREVIEW</div><div class="preview-area"><div style="width:220px">${renderMI(ms)}</div></div>`;}
+function updMI(){renderMISidebar();renderMICenter();renderMIInspect();updateMICode();}
+function renderMIInspect(){
+  const sc={default:{bg:"#FFFFFF",tk:"Background/background0"},hover:{bg:"#F6F6F6",tk:"Background/background50"},active:{bg:"#F2F1F1",tk:"Background/background100"},disabled:{bg:"#FFFFFF",tk:"Background/background0"}};
+  const s=sc[ms.state],textH=ms.state==="disabled"?"#A3A3A3":"#525252",textTk=ms.state==="disabled"?"Typography/typography400":"Typography/typography700",fs=ms.size==="sm"?"14px":"16px";
+  let h=ish("Design")+isb(isub("Fill")+irc("background",s.bg,s.tk)+isub("Text")+irc("color",textH,textTk)+isub("Corner")+ir("border-radius","4px","Border radius/sm")+(ms.state==="disabled"?isub("State")+ir("opacity","0.7","")+ir("cursor","default",""):""));
+  h+=ish("Layout")+isb(ir("direction",ms.iconPlacement==="right"?"row-reverse":"row","")+ir("gap","8px","Spacing/2")+ir("padding","12px","Spacing/3")+ir("height",ms.size==="sm"?"45px":"48px","")+(ms.showIcon?isub("Icon (Instance Swap)")+ir("component",iNames[ms.icon],"")+ir("size","16 × 16",""):""));
+  const ln=[`gap: var(--spacing-2);`,`padding: var(--spacing-3);`,`border-radius: var(--radius-sm);`,`font-size: ${fs};`,`background: var(--color-background-${ms.state==="hover"?"50":ms.state==="active"?"100":"0"});`,`color: var(--color-typography-${ms.state==="disabled"?"400":"700"});`];
+  if(ms.state==="disabled")ln.push(`opacity: 0.7;`);
+  h+=ish("CSS")+isb(`<pre style="font-size:10px;line-height:1.6;margin:0;color:#555;font-family:'SF Mono',monospace">.menu-item {\n  ${ln.join("\n  ")}\n}</pre>`);
+  document.getElementById("rightpanel").innerHTML=h;
+}
+function updateMICode(){
   const p=[`  <span class="prop">label</span>=<span class="str">"${ms.label}"</span>`];
   if(ms.showIcon)p.push(`  <span class="prop">icon</span>={<span class="str">&lt;${iNames[ms.icon]} /&gt;</span>}`);
   if(!ms.showIcon)p.push(`  <span class="prop">showIcon</span>={<span class="str">false</span>}`);
@@ -417,36 +353,77 @@ function updateMI(){
   if(ms.size!=="sm")p.push(`  <span class="prop">size</span>=<span class="str">"md"</span>`);
   if(ms.state==="disabled")p.push(`  <span class="prop">disabled</span>`);
   document.getElementById("code-output").innerHTML=`<span class="tag">&lt;</span><span class="comp">MenuItem</span>\n${p.join("\n")}\n<span class="tag">/&gt;</span>`;
-  document.getElementById("mi-icon-swap").style.display=ms.showIcon?"":"none";
-  updateMIInspect();
 }
 
-function updateMIInspect(){
-  const sc={default:{bg:"#FFFFFF",tk:"Background/background0"},hover:{bg:"#F6F6F6",tk:"Background/background50"},active:{bg:"#F2F1F1",tk:"Background/background100"},disabled:{bg:"#FFFFFF",tk:"Background/background0"}};
-  const s=sc[ms.state],textH=ms.state==="disabled"?"#A3A3A3":"#525252",textTk=ms.state==="disabled"?"Typography/typography400":"Typography/typography700",fs=ms.size==="sm"?"14px":"16px";
-  let h=ish("Design");
-  let design=isub("Fill")+irc("background",s.bg,s.tk)+isub("Text")+irc("color",textH,textTk)+isub("Corner")+ir("border-radius","4px","Border radius/sm");
-  if(ms.state==="disabled")design+=isub("State")+ir("opacity","0.7","")+ir("cursor","default","");
-  h+=isb(design);
-  h+=ish("Layout");
-  let layout=ir("direction",ms.iconPlacement==="right"?"row-reverse":"row","")+ir("gap","8px","Spacing/2")+ir("padding","12px","Spacing/3")+ir("height",ms.size==="sm"?"45px":"48px","");
-  if(ms.showIcon)layout+=isub("Icon (Instance Swap)")+ir("component",iNames[ms.icon],"")+ir("size","16 × 16","")+ir("swappable","any Icon","");
-  h+=isb(layout);
-  h+=ish("CSS");
-  const ln=[`gap: var(--spacing-2);`,`padding: var(--spacing-3);`,`border-radius: var(--radius-sm);`,`font-size: ${fs};`,`background: var(--color-background-${ms.state==="hover"?"50":ms.state==="active"?"100":"0"});`,`color: var(--color-typography-${ms.state==="disabled"?"400":"700"});`];
-  if(ms.state==="disabled")ln.push(`opacity: 0.7;`);
-  h+=isb(`<pre style="font-size:10px;line-height:1.6;margin:0;color:#555;font-family:'SF Mono',monospace;">.menu-item {\n  ${ln.join("\n  ")}\n}</pre>`);
-  document.getElementById("mi-inspect").innerHTML=h;
+// ==================== TOKENS PAGE ====================
+function getAllTokens(){
+  const all=[];
+  for(const[colName,col]of Object.entries(GITMA_TOKEN_DATA)){
+    for(const[catName,tokens]of Object.entries(col.categories)){
+      for(const t of tokens)all.push({...t,collection:colName,category:catName});
+    }
+  }
+  return all;
 }
+function isLightColor(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return(r*299+g*587+b*114)/1000>128;}
 
-// ===== Controls =====
-document.querySelectorAll(".chips").forEach(g=>{g.querySelectorAll(".chip").forEach(c=>{c.addEventListener("click",()=>{g.querySelectorAll(".chip").forEach(x=>x.classList.remove("active"));c.classList.add("active");const comp=g.dataset.comp,prop=g.dataset.prop;if(comp==="badge"){bs[prop]=c.dataset.value;updateBadge();}if(comp==="mi"){ms[prop]=c.dataset.value;updateMI();}});});});
-document.querySelectorAll(".toggle").forEach(t=>{t.addEventListener("click",()=>{t.classList.toggle("active");const comp=t.dataset.comp,prop=t.dataset.prop,val=t.classList.contains("active");if(comp==="badge"){bs[prop]=val;updateBadge();}if(comp==="mi"){ms[prop]=val;updateMI();}});});
-document.querySelectorAll(".icon-option").forEach(o=>{o.addEventListener("click",()=>{o.parentElement.querySelectorAll(".icon-option").forEach(x=>x.classList.remove("active"));o.classList.add("active");ms.icon=o.dataset.value;updateMI();});});
-document.getElementById("badge-label").addEventListener("input",e=>{bs.label=e.target.value;updateBadge();});
-document.getElementById("mi-label").addEventListener("input",e=>{ms.label=e.target.value;updateMI();});
+function renderTokenSidebar(){
+  let cats="";
+  for(const[colName,col]of Object.entries(GITMA_TOKEN_DATA)){
+    cats+=`<div class="nav-section">${colName}</div>`;
+    for(const[catName,tokens]of Object.entries(col.categories)){
+      const key=colName+"/"+catName;
+      cats+=`<div class="cat-item${tokenCat===key?" active":""}" onclick="tokenCat=tokenCat==='${key}'?null:'${key}';showPage('tokens')"><span>${catName}</span><span class="cat-count">${tokens.length}</span></div>`;
+    }
+  }
+  const total=getAllTokens(),colors=total.filter(t=>t.resolvedType==="COLOR");
+  document.getElementById("sidebar").innerHTML=`
+    <button class="back-btn" onclick="showPage('list')"><svg><use href="#icon-arrow-left"/></svg> All</button>
+    <h1 style="font-size:16px;margin-bottom:2px">Design Tokens</h1>
+    <p style="font-size:11px;color:#999;margin-bottom:14px">${total.length} tokens, ${Object.keys(GITMA_TOKEN_DATA).length} collections</p>
+    <div class="mode-toggle"><button class="mode-btn${tokenMode==="Light"?" active":""}" onclick="tokenMode='Light';showPage('tokens')">Light</button><button class="mode-btn${tokenMode==="Dark"?" active":""}" onclick="tokenMode='Dark';showPage('tokens')">Dark</button></div>
+    <input class="search control" type="text" placeholder="Search tokens..." value="${tokenSearch}" oninput="tokenSearch=this.value;renderTokenCenter()">
+    ${cats}
+    <div class="powered"><a href="https://github.com/lucadebort/gitma" target="_blank">POWERED BY <span>GITMA</span></a></div>`;
+}
+function renderTkVal(v){
+  if(!v)return`<div class="token-value">—</div>`;
+  if(v.type==="COLOR")return`<div class="token-value"><span class="token-swatch" style="background:${v.hex}"></span><span class="token-hex">${v.hex}</span></div>`;
+  if(v.type==="FLOAT")return`<div class="token-value"><span style="color:#555;font-family:monospace;font-size:11px">${v.value}${v.value>0&&v.value<=384?"px":""}</span></div>`;
+  if(v.type==="ALIAS")return`<div class="token-value"><span style="color:#7c3aed;font-size:10px">→ ${v.ref}</span></div>`;
+  return`<div class="token-value">${JSON.stringify(v)}</div>`;
+}
+function renderTokenCenter(){
+  let tokens=getAllTokens();
+  if(tokenCat){const[col,cat]=tokenCat.split("/");tokens=tokens.filter(t=>t.collection===col&&t.category===cat);}
+  if(tokenSearch)tokens=tokens.filter(t=>t.fullName.toLowerCase().includes(tokenSearch.toLowerCase()));
+  const colors=tokens.filter(t=>t.resolvedType==="COLOR"),floats=tokens.filter(t=>t.resolvedType==="FLOAT");
+  const alt=tokenMode==="Light"?"Dark":"Light";
+  let h=`<div class="token-main">`;
+  h+=`<div class="token-stats"><div class="token-stat"><div class="token-stat-value">${tokens.length}</div><div class="token-stat-label">Tokens</div></div><div class="token-stat"><div class="token-stat-value">${colors.length}</div><div class="token-stat-label">Colors</div></div><div class="token-stat"><div class="token-stat-value">${floats.length}</div><div class="token-stat-label">Numbers</div></div></div>`;
+  if(tokenCat&&colors.length>2&&colors.length===tokens.length){
+    h+=`<div class="color-scale">`;
+    for(const t of colors){const v=t.values[tokenMode];if(v?.hex){const tc=isLightColor(v.hex)?"#000":"#fff";h+=`<div class="color-scale-item" style="background:${v.hex}" title="${t.fullName}: ${v.hex}"><div class="color-scale-label" style="color:${tc}">${t.name}</div></div>`;}}
+    h+=`</div>`;
+  }
+  if(!tokens.length){h+=`<div class="token-empty"><h3 style="font-size:16px;color:#333;margin-bottom:4px">No tokens found</h3><p>Try a different search or category.</p></div>`;}
+  else{
+    h+=`<div class="token-grid"><div class="token-row header"><span>Token</span><span>${tokenMode}</span><span>${alt}</span><span></span></div>`;
+    for(const t of tokens){h+=`<div class="token-row"><div><div class="token-name">${t.name}</div><div class="token-path">${t.fullName}</div>${t.description?`<div class="token-desc">${t.description}</div>`:""}</div>${renderTkVal(t.values[tokenMode])}${renderTkVal(t.values[alt])}<button class="token-copy" onclick="copyTk(this,'${t.fullName}')" title="Copy path"><svg><use href="#icon-copy"/></svg></button></div>`;}
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+  document.getElementById("center").innerHTML=h;
+}
+function copyTk(btn,p){navigator.clipboard.writeText(p).then(()=>{btn.classList.add("copied");setTimeout(()=>btn.classList.remove("copied"),1200);});}
 
-updateBadge();updateMI();
+// ==================== CODE DOCK ====================
+let dockOpen=true;
+function toggleDock(){dockOpen=!dockOpen;document.getElementById("dock-body").style.display=dockOpen?"":"none";document.getElementById("dock-arrow").innerHTML=dockOpen?"&#9660;":"&#9650;";}
+function copyCode(){const t=document.getElementById("code-output").innerText;navigator.clipboard.writeText(t).then(()=>{const b=document.getElementById("copy-btn");b.textContent="Copied!";b.classList.add("copied");setTimeout(()=>{b.textContent="Copy";b.classList.remove("copied")},1500)});}
+
+// ==================== INIT ====================
+showPage("list");
 </script>
 </body>
 </html>

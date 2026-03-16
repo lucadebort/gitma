@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Tokens — Gitma</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #1a1a1a; }
+
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar { background: #fff; border-right: 1px solid #e5e5e5; padding: 20px; display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0; overflow-y: auto; }
+  .sidebar h1 { font-size: 16px; margin-bottom: 2px; }
+  .sidebar .subtitle { font-size: 11px; color: #999; margin-bottom: 16px; }
+  .search { width: 100%; padding: 7px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; outline: none; margin-bottom: 16px; }
+  .search:focus { border-color: #999; }
+  .divider { border: none; border-top: 1px solid #eee; margin: 12px 0; }
+  .mode-toggle { display: flex; gap: 2px; margin-bottom: 16px; background: #f0f0f0; border-radius: 6px; padding: 2px; }
+  .mode-btn { flex: 1; padding: 5px; text-align: center; font-size: 11px; border: none; background: transparent; border-radius: 4px; cursor: pointer; color: #666; transition: all 0.15s; }
+  .mode-btn.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .cat-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #999; padding: 8px 0 4px; }
+  .cat-item { padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; color: #444; transition: all 0.15s; display: flex; align-items: center; justify-content: space-between; }
+  .cat-item:hover { background: #f5f5f5; }
+  .cat-item.active { background: #1a1a1a; color: #fff; }
+  .cat-count { font-size: 10px; color: #999; }
+  .cat-item.active .cat-count { color: #888; }
+  .powered { margin-top: auto; padding-top: 16px; border-top: 1px solid #eee; text-align: center; }
+  .powered a { font-size: 10px; color: #999; text-decoration: none; letter-spacing: 0.03em; }
+  .powered a:hover { color: #666; }
+  .powered a span { font-weight: 600; color: #666; }
+  .powered a:hover span { color: #1a1a1a; }
+
+  /* Main */
+  .main { padding: 32px; overflow-y: auto; }
+  .main-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .main-header h2 { font-size: 18px; }
+  .main-header .count { font-size: 12px; color: #999; }
+  .main-desc { font-size: 12px; color: #999; margin-bottom: 24px; }
+
+  /* Token grid */
+  .token-grid { display: flex; flex-direction: column; gap: 1px; background: #eee; border-radius: 8px; overflow: hidden; }
+  .token-row { display: grid; grid-template-columns: 1fr 140px 140px 40px; align-items: center; padding: 10px 16px; background: #fff; gap: 12px; }
+  .token-row.header { background: #fafafa; position: sticky; top: 0; z-index: 1; }
+  .token-row.header span { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
+  .token-name { font-family: monospace; font-size: 12px; color: #1a1a1a; }
+  .token-path { font-size: 10px; color: #999; margin-top: 1px; }
+  .token-desc { font-size: 10px; color: #7c3aed; margin-top: 2px; font-style: italic; }
+  .token-value { font-family: monospace; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+  .token-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); flex-shrink: 0; }
+  .token-hex { color: #555; }
+  .token-float { color: #555; }
+  .token-copy { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; cursor: pointer; border-radius: 4px; color: #ccc; transition: all 0.15s; }
+  .token-copy:hover { background: #f0f0f0; color: #666; }
+  .token-copy.copied { color: #4ade80; }
+  .token-copy svg { width: 14px; height: 14px; }
+
+  /* Color scale */
+  .color-scale { display: flex; gap: 1px; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  .color-scale-item { flex: 1; height: 48px; position: relative; cursor: pointer; transition: transform 0.15s; }
+  .color-scale-item:hover { transform: scaleY(1.15); z-index: 1; }
+  .color-scale-label { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center; font-size: 8px; font-weight: 600; opacity: 0; transition: opacity 0.15s; }
+  .color-scale-item:hover .color-scale-label { opacity: 1; }
+
+  /* Spacing/radius visual */
+  .dimension-bar { height: 8px; background: #1a1a1a; border-radius: 2px; min-width: 2px; transition: width 0.2s; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 48px; color: #999; }
+  .empty h3 { font-size: 16px; color: #333; margin-bottom: 4px; }
+
+  /* Stats bar */
+  .stats { display: flex; gap: 16px; margin-bottom: 24px; }
+  .stat { background: #fff; border-radius: 8px; padding: 12px 16px; flex: 1; }
+  .stat-value { font-size: 20px; font-weight: 600; }
+  .stat-label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+
+<svg style="display:none">
+  <symbol id="icon-copy" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="8" height="8" rx="1.5"/><path d="M3 11V3h8"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="sidebar">
+    <h1>Design Tokens</h1>
+    <p class="subtitle">from Figma "📖 Anticarlotta"</p>
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" onclick="setMode('Light')">Light</button>
+      <button class="mode-btn" onclick="setMode('Dark')">Dark</button>
+    </div>
+
+    <input class="search" type="text" placeholder="Search tokens..." id="search" oninput="filterTokens()">
+
+    <div id="categories"></div>
+
+    <div class="powered"><a href="https://github.com/lucadebort/gitma" target="_blank">POWERED BY <span>GITMA</span></a></div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+const data = {"Semantic colors":{"modes":[{"id":"605:0","name":"Light"},{"id":"605:1","name":"Dark"}],"categories":{"Primary":[{"name":"primary0","fullName":"Primary/primary0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#B3B3B3"},"Dark":{"type":"COLOR","hex":"#A6A6A6"}}},{"name":"primary50","fullName":"Primary/primary50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#999999"},"Dark":{"type":"COLOR","hex":"#AFAFAF"}}},{"name":"primary100","fullName":"Primary/primary100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#808080"},"Dark":{"type":"COLOR","hex":"#BABABA"}}},{"name":"primary200","fullName":"Primary/primary200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#737373"},"Dark":{"type":"COLOR","hex":"#C5C5C5"}}},{"name":"primary300","fullName":"Primary/primary300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#666666"},"Dark":{"type":"COLOR","hex":"#D4D4D4"}}},{"name":"primary400","fullName":"Primary/primary400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#525252"},"Dark":{"type":"COLOR","hex":"#DDDDDD"}}},{"name":"primary500","fullName":"Primary/primary500","resolvedType":"COLOR","description":"used for default","values":{"Light":{"type":"COLOR","hex":"#333333"},"Dark":{"type":"COLOR","hex":"#E6E6E6"}}},{"name":"primary600","fullName":"Primary/primary600","resolvedType":"COLOR","description":"used for hover","values":{"Light":{"type":"COLOR","hex":"#292929"},"Dark":{"type":"COLOR","hex":"#F0F0F0"}}},{"name":"primary700","fullName":"Primary/primary700","resolvedType":"COLOR","description":"used for pressed","values":{"Light":{"type":"COLOR","hex":"#1F1F1F"},"Dark":{"type":"COLOR","hex":"#FAFAFA"}}},{"name":"primary800","fullName":"Primary/primary800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#0D0D0D"},"Dark":{"type":"COLOR","hex":"#FDFDFD"}}},{"name":"primary900","fullName":"Primary/primary900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#0A0A0A"},"Dark":{"type":"COLOR","hex":"#FEF9F9"}}},{"name":"primary950","fullName":"Primary/primary950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#080808"},"Dark":{"type":"COLOR","hex":"#FDFCFC"}}}],"Secondary":[{"name":"secondary0","fullName":"Secondary/secondary0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FDFDFD"},"Dark":{"type":"COLOR","hex":"#141414"}}},{"name":"secondary50","fullName":"Secondary/secondary50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FBFBFB"},"Dark":{"type":"COLOR","hex":"#171717"}}},{"name":"secondary100","fullName":"Secondary/secondary100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#F6F6F6"},"Dark":{"type":"COLOR","hex":"#1F1F1F"}}},{"name":"secondary200","fullName":"Secondary/secondary200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#F2F2F2"},"Dark":{"type":"COLOR","hex":"#272727"}}},{"name":"secondary300","fullName":"Secondary/secondary300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#EDEDED"},"Dark":{"type":"COLOR","hex":"#2C2C2C"}}},{"name":"secondary400","fullName":"Secondary/secondary400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#E6E6E7"},"Dark":{"type":"COLOR","hex":"#383939"}}},{"name":"secondary500","fullName":"Secondary/secondary500","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#D9D9DB"},"Dark":{"type":"COLOR","hex":"#3F4040"}}},{"name":"secondary600","fullName":"Secondary/secondary600","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#C6C7C7"},"Dark":{"type":"COLOR","hex":"#565656"}}},{"name":"secondary700","fullName":"Secondary/secondary700","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#BDBDBD"},"Dark":{"type":"COLOR","hex":"#656565"}}},{"name":"secondary800","fullName":"Secondary/secondary800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#B1B1B1"},"Dark":{"type":"COLOR","hex":"#878787"}}},{"name":"secondary900","fullName":"Secondary/secondary900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#A5A4A4"},"Dark":{"type":"COLOR","hex":"#969696"}}},{"name":"secondary950","fullName":"Secondary/secondary950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#9D9D9D"},"Dark":{"type":"COLOR","hex":"#A4A4A4"}}}],"Tertiary":[{"name":"tertiary0","fullName":"Tertiary/tertiary0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FFFAF5"},"Dark":{"type":"COLOR","hex":"#543112"}}},{"name":"tertiary50","fullName":"Tertiary/tertiary50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FFF2E5"},"Dark":{"type":"COLOR","hex":"#6C3D13"}}},{"name":"tertiary100","fullName":"Tertiary/tertiary100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FFE9D5"},"Dark":{"type":"COLOR","hex":"#824917"}}},{"name":"tertiary200","fullName":"Tertiary/tertiary200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FED1AA"},"Dark":{"type":"COLOR","hex":"#B4621A"}}},{"name":"tertiary300","fullName":"Tertiary/tertiary300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FDB474"},"Dark":{"type":"COLOR","hex":"#D7751F"}}},{"name":"tertiary400","fullName":"Tertiary/tertiary400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FB9D4B"},"Dark":{"type":"COLOR","hex":"#E78128"}}},{"name":"tertiary500","fullName":"Tertiary/tertiary500","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#E78128"},"Dark":{"type":"COLOR","hex":"#FB9D4B"}}},{"name":"tertiary600","fullName":"Tertiary/tertiary600","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#D7751F"},"Dark":{"type":"COLOR","hex":"#FDB474"}}},{"name":"tertiary700","fullName":"Tertiary/tertiary700","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#B4621A"},"Dark":{"type":"COLOR","hex":"#FED1AA"}}},{"name":"tertiary800","fullName":"Tertiary/tertiary800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#824917"},"Dark":{"type":"COLOR","hex":"#FFE9D5"}}},{"name":"tertiary900","fullName":"Tertiary/tertiary900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#6C3D13"},"Dark":{"type":"COLOR","hex":"#FFF2E5"}}},{"name":"tertiary950","fullName":"Tertiary/tertiary950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#543112"},"Dark":{"type":"COLOR","hex":"#FFFAF5"}}}],"Error":[{"name":"error0","fullName":"Error/error0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FEE9E9"},"Dark":{"type":"COLOR","hex":"#531313"}}},{"name":"error50","fullName":"Error/error50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FEE2E2"},"Dark":{"type":"COLOR","hex":"#7F1D1D"}}},{"name":"error100","fullName":"Error/error100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FECACA"},"Dark":{"type":"COLOR","hex":"#991B1B"}}},{"name":"error200","fullName":"Error/error200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FCA5A5"},"Dark":{"type":"COLOR","hex":"#B91C1C"}}},{"name":"error300","fullName":"Error/error300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#F87171"},"Dark":{"type":"COLOR","hex":"#DC2626"}}},{"name":"error400","fullName":"Error/error400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#EF4444"},"Dark":{"type":"COLOR","hex":"#E63535"}}},{"name":"error500","fullName":"Error/error500","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#E63535"},"Dark":{"type":"COLOR","hex":"#EF4444"}}},{"name":"error600","fullName":"Error/error600","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#DC2626"},"Dark":{"type":"COLOR","hex":"#F96160"}}},{"name":"error700","fullName":"Error/error700","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#B91C1C"},"Dark":{"type":"COLOR","hex":"#E55B5A"}}},{"name":"error800","fullName":"Error/error800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#991B1B"},"Dark":{"type":"COLOR","hex":"#FECACA"}}},{"name":"error900","fullName":"Error/error900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#7F1D1D"},"Dark":{"type":"COLOR","hex":"#FEE2E2"}}},{"name":"error950","fullName":"Error/error950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#531313"},"Dark":{"type":"COLOR","hex":"#FEE9E9"}}},{"name":"error background","fullName":"Error/error background","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FEF1F1"},"Dark":{"type":"COLOR","hex":"#422B2B"}}}],"Warning":[{"name":"warning0","fullName":"Warning/warning0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FFF9F5"},"Dark":{"type":"COLOR","hex":"#542D12"}}},{"name":"warning50","fullName":"Warning/warning50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FFF4EC"},"Dark":{"type":"COLOR","hex":"#6C3813"}}},{"name":"warning100","fullName":"Warning/warning100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FFE7D5"},"Dark":{"type":"COLOR","hex":"#824417"}}},{"name":"warning200","fullName":"Warning/warning200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FECDAA"},"Dark":{"type":"COLOR","hex":"#B45A1A"}}},{"name":"warning300","fullName":"Warning/warning300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FDAD74"},"Dark":{"type":"COLOR","hex":"#D76C1F"}}},{"name":"warning400","fullName":"Warning/warning400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FB954B"},"Dark":{"type":"COLOR","hex":"#E77828"}}},{"name":"warning500","fullName":"Warning/warning500","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#E77828"},"Dark":{"type":"COLOR","hex":"#FB954B"}}},{"name":"warning600","fullName":"Warning/warning600","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#D76C1F"},"Dark":{"type":"COLOR","hex":"#FDAD74"}}},{"name":"warning700","fullName":"Warning/warning700","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#B45A1A"},"Dark":{"type":"COLOR","hex":"#FECDAA"}}},{"name":"warning800","fullName":"Warning/warning800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#824417"},"Dark":{"type":"COLOR","hex":"#FFE7D5"}}},{"name":"warning900","fullName":"Warning/warning900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#6C3813"},"Dark":{"type":"COLOR","hex":"#FFF4ED"}}},{"name":"warning950","fullName":"Warning/warning950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#542D12"},"Dark":{"type":"COLOR","hex":"#FFF9F5"}}},{"name":"warning background","fullName":"Warning/warning background","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FFF3EA"},"Dark":{"type":"COLOR","hex":"#412F23"}}}],"Success":[{"name":"success0","fullName":"Success/success0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#E4FFF4"},"Dark":{"type":"COLOR","hex":"#1B3224"}}},{"name":"success50","fullName":"Success/success50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#CAFFE8"},"Dark":{"type":"COLOR","hex":"#14532D"}}},{"name":"success100","fullName":"Success/success100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#A2F1C0"},"Dark":{"type":"COLOR","hex":"#166534"}}},{"name":"success200","fullName":"Success/success200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#84D3A2"},"Dark":{"type":"COLOR","hex":"#206F3E"}}},{"name":"success300","fullName":"Success/success300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#66B584"},"Dark":{"type":"COLOR","hex":"#2A7948"}}},{"name":"success400","fullName":"Success/success400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#489766"},"Dark":{"type":"COLOR","hex":"#348352"}}},{"name":"success500","fullName":"Success/success500","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#348352"},"Dark":{"type":"COLOR","hex":"#489766"}}},{"name":"success600","fullName":"Success/success600","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#2A7948"},"Dark":{"type":"COLOR","hex":"#66B584"}}},{"name":"success700","fullName":"Success/success700","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#206F3E"},"Dark":{"type":"COLOR","hex":"#84D3A2"}}},{"name":"success800","fullName":"Success/success800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#166534"},"Dark":{"type":"COLOR","hex":"#A2F1C0"}}},{"name":"success900","fullName":"Success/success900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#14532D"},"Dark":{"type":"COLOR","hex":"#CAFFE8"}}},{"name":"success950","fullName":"Success/success950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#1B3224"},"Dark":{"type":"COLOR","hex":"#E4FFF4"}}},{"name":"success background","fullName":"Success/success background","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#EDFCF2"},"Dark":{"type":"COLOR","hex":"#1C2B21"}}}],"Info":[{"name":"info0","fullName":"Info/info0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#ECF8FE"},"Dark":{"type":"COLOR","hex":"#032638"}}},{"name":"info50","fullName":"Info/info50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#C7EBFC"},"Dark":{"type":"COLOR","hex":"#05405D"}}},{"name":"info100","fullName":"Info/info100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#A2DDFA"},"Dark":{"type":"COLOR","hex":"#075A83"}}},{"name":"info200","fullName":"Info/info200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#7CCFF8"},"Dark":{"type":"COLOR","hex":"#0973A8"}}},{"name":"info300","fullName":"Info/info300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#57C2F6"},"Dark":{"type":"COLOR","hex":"#0B8DCD"}}},{"name":"info400","fullName":"Info/info400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#32B4F4"},"Dark":{"type":"COLOR","hex":"#0DA6F2"}}},{"name":"info500","fullName":"Info/info500","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#0DA6F2"},"Dark":{"type":"COLOR","hex":"#32B4F4"}}},{"name":"info600","fullName":"Info/info600","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#0B8DCD"},"Dark":{"type":"COLOR","hex":"#57C2F6"}}},{"name":"info700","fullName":"Info/info700","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#0973A8"},"Dark":{"type":"COLOR","hex":"#7CCFF8"}}},{"name":"info800","fullName":"Info/info800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#075A83"},"Dark":{"type":"COLOR","hex":"#A2DDFA"}}},{"name":"info900","fullName":"Info/info900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#05405D"},"Dark":{"type":"COLOR","hex":"#C7EBFC"}}},{"name":"Info950","fullName":"Info/Info950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#032638"},"Dark":{"type":"COLOR","hex":"#ECF8FE"}}},{"name":"info background","fullName":"Info/info background","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#EBF8FE"},"Dark":{"type":"COLOR","hex":"#1A282E"}}}],"Typography":[{"name":"typography0","fullName":"Typography/typography0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FEFEFF"},"Dark":{"type":"COLOR","hex":"#171717"}}},{"name":"typography50","fullName":"Typography/typography50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#F5F5F5"},"Dark":{"type":"COLOR","hex":"#262627"}}},{"name":"typography100","fullName":"Typography/typography100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#E5E5E5"},"Dark":{"type":"COLOR","hex":"#404040"}}},{"name":"typography200","fullName":"Typography/typography200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#DBDBDC"},"Dark":{"type":"COLOR","hex":"#525252"}}},{"name":"typography300","fullName":"Typography/typography300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#D4D4D4"},"Dark":{"type":"COLOR","hex":"#737373"}}},{"name":"typography400","fullName":"Typography/typography400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#A3A3A3"},"Dark":{"type":"COLOR","hex":"#8C8C8C"}}},{"name":"typography500","fullName":"Typography/typography500","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#8C8C8C"},"Dark":{"type":"COLOR","hex":"#A3A3A3"}}},{"name":"typography600","fullName":"Typography/typography600","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#737373"},"Dark":{"type":"COLOR","hex":"#D4D4D4"}}},{"name":"typography700","fullName":"Typography/typography700","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#525252"},"Dark":{"type":"COLOR","hex":"#DBDBDC"}}},{"name":"typography800","fullName":"Typography/typography800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#404040"},"Dark":{"type":"COLOR","hex":"#E5E5E5"}}},{"name":"typography900","fullName":"Typography/typography900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#262627"},"Dark":{"type":"COLOR","hex":"#F5F5F5"}}},{"name":"typography950","fullName":"Typography/typography950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#171717"},"Dark":{"type":"COLOR","hex":"#FEFEFF"}}}],"Background":[{"name":"background0","fullName":"Background/background0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FFFFFF"},"Dark":{"type":"COLOR","hex":"#121212"}}},{"name":"background50","fullName":"Background/background50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#F6F6F6"},"Dark":{"type":"COLOR","hex":"#272625"}}},{"name":"background100","fullName":"Background/background100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#F2F1F1"},"Dark":{"type":"COLOR","hex":"#414040"}}},{"name":"background200","fullName":"Background/background200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#DCDBDB"},"Dark":{"type":"COLOR","hex":"#535252"}}},{"name":"background300","fullName":"Background/background300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#D5D4D4"},"Dark":{"type":"COLOR","hex":"#747474"}}},{"name":"background400","fullName":"Background/background400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#A2A3A3"},"Dark":{"type":"COLOR","hex":"#8E8E8E"}}},{"name":"background500","fullName":"Background/background500","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#8E8E8E"},"Dark":{"type":"COLOR","hex":"#A2A3A3"}}},{"name":"background600","fullName":"Background/background600","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#747474"},"Dark":{"type":"COLOR","hex":"#D5D4D4"}}},{"name":"background700","fullName":"Background/background700","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#535252"},"Dark":{"type":"COLOR","hex":"#E5E4E4"}}},{"name":"background800","fullName":"Background/background800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#414040"},"Dark":{"type":"COLOR","hex":"#F2F1F1"}}},{"name":"background900","fullName":"Background/background900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#272625"},"Dark":{"type":"COLOR","hex":"#F6F6F6"}}},{"name":"background950","fullName":"Background/background950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#121212"},"Dark":{"type":"COLOR","hex":"#FFFFFF"}}},{"name":"background muted","fullName":"Background/background muted","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#F7F8F7"},"Dark":{"type":"COLOR","hex":"#333333"}}}],"Border":[{"name":"border0","fullName":"Border/border0","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#FDFEFE"},"Dark":{"type":"COLOR","hex":"#1A1717"}}},{"name":"border50","fullName":"Border/border50","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#F3F3F3"},"Dark":{"type":"COLOR","hex":"#272624"}}},{"name":"border100","fullName":"Border/border100","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#E6E6E6"},"Dark":{"type":"COLOR","hex":"#414141"}}},{"name":"border200","fullName":"Border/border200","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#DDDCDB"},"Dark":{"type":"COLOR","hex":"#535252"}}},{"name":"border300","fullName":"Border/border300","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#D3D3D3"},"Dark":{"type":"COLOR","hex":"#737474"}}},{"name":"border400","fullName":"Border/border400","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#A5A3A3"},"Dark":{"type":"COLOR","hex":"#8C8D8D"}}},{"name":"border500","fullName":"Border/border500","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#8C8D8D"},"Dark":{"type":"COLOR","hex":"#A5A3A3"}}},{"name":"border600","fullName":"Border/border600","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#737474"},"Dark":{"type":"COLOR","hex":"#D3D3D3"}}},{"name":"border700","fullName":"Border/border700","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#535252"},"Dark":{"type":"COLOR","hex":"#DDDCDB"}}},{"name":"border800","fullName":"Border/border800","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#414141"},"Dark":{"type":"COLOR","hex":"#E6E6E6"}}},{"name":"border900","fullName":"Border/border900","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#272624"},"Dark":{"type":"COLOR","hex":"#F3F3F3"}}},{"name":"border950","fullName":"Border/border950","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#1A1717"},"Dark":{"type":"COLOR","hex":"#FDFEFE"}}}],"Spacing":[{"name":"0","fullName":"Spacing/0","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":0},"Dark":{"type":"FLOAT","value":0}}},{"name":"px","fullName":"Spacing/px","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":1},"Dark":{"type":"FLOAT","value":1}}},{"name":"0point5","fullName":"Spacing/0point5","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":2},"Dark":{"type":"FLOAT","value":2}}},{"name":"1","fullName":"Spacing/1","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":4},"Dark":{"type":"FLOAT","value":4}}},{"name":"1point5","fullName":"Spacing/1point5","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":6},"Dark":{"type":"FLOAT","value":6}}},{"name":"2","fullName":"Spacing/2","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":8},"Dark":{"type":"FLOAT","value":8}}},{"name":"2point5","fullName":"Spacing/2point5","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":10},"Dark":{"type":"FLOAT","value":10}}},{"name":"3","fullName":"Spacing/3","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":12},"Dark":{"type":"FLOAT","value":12}}},{"name":"3point5","fullName":"Spacing/3point5","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":14},"Dark":{"type":"FLOAT","value":14}}},{"name":"4","fullName":"Spacing/4","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":16},"Dark":{"type":"FLOAT","value":16}}},{"name":"4point5","fullName":"Spacing/4point5","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":18},"Dark":{"type":"FLOAT","value":18}}},{"name":"5","fullName":"Spacing/5","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":20},"Dark":{"type":"FLOAT","value":20}}},{"name":"6","fullName":"Spacing/6","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":24},"Dark":{"type":"FLOAT","value":24}}},{"name":"7","fullName":"Spacing/7","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":28},"Dark":{"type":"FLOAT","value":28}}},{"name":"8","fullName":"Spacing/8","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":32},"Dark":{"type":"FLOAT","value":32}}},{"name":"9","fullName":"Spacing/9","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":36},"Dark":{"type":"FLOAT","value":36}}},{"name":"10","fullName":"Spacing/10","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":40},"Dark":{"type":"FLOAT","value":40}}},{"name":"11","fullName":"Spacing/11","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":44},"Dark":{"type":"FLOAT","value":44}}},{"name":"12","fullName":"Spacing/12","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":48},"Dark":{"type":"FLOAT","value":48}}},{"name":"16","fullName":"Spacing/16","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":64},"Dark":{"type":"FLOAT","value":64}}},{"name":"20","fullName":"Spacing/20","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":80},"Dark":{"type":"FLOAT","value":80}}},{"name":"24","fullName":"Spacing/24","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":96},"Dark":{"type":"FLOAT","value":96}}},{"name":"32","fullName":"Spacing/32","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":128},"Dark":{"type":"FLOAT","value":128}}},{"name":"40","fullName":"Spacing/40","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":160},"Dark":{"type":"FLOAT","value":160}}},{"name":"48","fullName":"Spacing/48","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":192},"Dark":{"type":"FLOAT","value":192}}},{"name":"56","fullName":"Spacing/56","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":224},"Dark":{"type":"FLOAT","value":224}}},{"name":"64","fullName":"Spacing/64","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":256},"Dark":{"type":"FLOAT","value":256}}},{"name":"72","fullName":"Spacing/72","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":288},"Dark":{"type":"FLOAT","value":288}}},{"name":"80","fullName":"Spacing/80","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":320},"Dark":{"type":"FLOAT","value":320}}},{"name":"96","fullName":"Spacing/96","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":384},"Dark":{"type":"FLOAT","value":384}}}],"Border widths":[{"name":"0","fullName":"Border widths/0","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":0},"Dark":{"type":"FLOAT","value":0}}},{"name":"1","fullName":"Border widths/1","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":1},"Dark":{"type":"FLOAT","value":1}}},{"name":"2","fullName":"Border widths/2","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":2},"Dark":{"type":"FLOAT","value":2}}},{"name":"4","fullName":"Border widths/4","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":4},"Dark":{"type":"FLOAT","value":4}}},{"name":"8","fullName":"Border widths/8","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":8},"Dark":{"type":"FLOAT","value":8}}}],"Border radius":[{"name":"none","fullName":"Border radius/none","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":0},"Dark":{"type":"FLOAT","value":0}}},{"name":"xs","fullName":"Border radius/xs","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":2},"Dark":{"type":"FLOAT","value":2}}},{"name":"sm","fullName":"Border radius/sm","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":4},"Dark":{"type":"FLOAT","value":4}}},{"name":"md","fullName":"Border radius/md","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":6},"Dark":{"type":"FLOAT","value":6}}},{"name":"lg","fullName":"Border radius/lg","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":8},"Dark":{"type":"FLOAT","value":8}}},{"name":"xl","fullName":"Border radius/xl","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":12},"Dark":{"type":"FLOAT","value":12}}},{"name":"2xl","fullName":"Border radius/2xl","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":16},"Dark":{"type":"FLOAT","value":16}}},{"name":"3xl","fullName":"Border radius/3xl","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":24},"Dark":{"type":"FLOAT","value":24}}},{"name":"full","fullName":"Border radius/full","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":9999},"Dark":{"type":"FLOAT","value":9999}}}],"Opacity":[{"name":"0","fullName":"Opacity/0","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":0},"Dark":{"type":"FLOAT","value":0}}},{"name":"5","fullName":"Opacity/5","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":5},"Dark":{"type":"FLOAT","value":5}}},{"name":"10","fullName":"Opacity/10","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":10},"Dark":{"type":"FLOAT","value":10}}},{"name":"20","fullName":"Opacity/20","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":20},"Dark":{"type":"FLOAT","value":20}}},{"name":"25","fullName":"Opacity/25","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":25},"Dark":{"type":"FLOAT","value":25}}},{"name":"30","fullName":"Opacity/30","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":30},"Dark":{"type":"FLOAT","value":30}}},{"name":"40","fullName":"Opacity/40","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":40},"Dark":{"type":"FLOAT","value":40}}},{"name":"50","fullName":"Opacity/50","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":50},"Dark":{"type":"FLOAT","value":50}}},{"name":"60","fullName":"Opacity/60","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":60},"Dark":{"type":"FLOAT","value":60}}},{"name":"70","fullName":"Opacity/70","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":70},"Dark":{"type":"FLOAT","value":70}}},{"name":"75","fullName":"Opacity/75","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":75},"Dark":{"type":"FLOAT","value":75}}},{"name":"80","fullName":"Opacity/80","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":80},"Dark":{"type":"FLOAT","value":80}}},{"name":"90","fullName":"Opacity/90","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":90},"Dark":{"type":"FLOAT","value":90}}},{"name":"95","fullName":"Opacity/95","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":95},"Dark":{"type":"FLOAT","value":95}}},{"name":"100","fullName":"Opacity/100","resolvedType":"FLOAT","values":{"Light":{"type":"FLOAT","value":100},"Dark":{"type":"FLOAT","value":100}}}],"Indicator":[{"name":"Indicator-primary","fullName":"Indicator/Indicator-primary","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#373737"},"Dark":{"type":"COLOR","hex":"#F7F7F7"}}},{"name":"Indicator-info","fullName":"Indicator/Indicator-info","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#5399EC"},"Dark":{"type":"COLOR","hex":"#A1C7F5"}}},{"name":"Indicator-error","fullName":"Indicator/Indicator-error","resolvedType":"COLOR","values":{"Light":{"type":"COLOR","hex":"#B91C1C"},"Dark":{"type":"COLOR","hex":"#E84645"}}}]}},"Fixed Colors":{"modes":[{"id":"612:0","name":"light"},{"id":"671:0","name":"dark"}],"categories":{"Other":[{"name":"background - light","fullName":"background - light","resolvedType":"COLOR","values":{"light":{"type":"COLOR","hex":"#FBFBFB"},"dark":{"type":"COLOR","hex":"#FBFBFB"}}},{"name":"text label - white","fullName":"text label - white","resolvedType":"COLOR","values":{"light":{"type":"COLOR","hex":"#FFFFFF"},"dark":{"type":"COLOR","hex":"#FFFFFF"}}},{"name":"text label - gray","fullName":"text label - gray","resolvedType":"COLOR","values":{"light":{"type":"COLOR","hex":"#D4D4D4"},"dark":{"type":"COLOR","hex":"#D4D4D4"}}},{"name":"text label - black","fullName":"text label - black","resolvedType":"COLOR","values":{"light":{"type":"COLOR","hex":"#181718"},"dark":{"type":"COLOR","hex":"#181718"}}},{"name":"background - dark","fullName":"background - dark","resolvedType":"COLOR","values":{"light":{"type":"COLOR","hex":"#181719"},"dark":{"type":"COLOR","hex":"#181719"}}}]}}};
+
+let currentMode = "Light";
+let currentCategory = null;
+let searchQuery = "";
+
+// Flatten all tokens for counting
+function getAllTokens() {
+  const all = [];
+  for (const [colName, col] of Object.entries(data)) {
+    for (const [catName, tokens] of Object.entries(col.categories)) {
+      for (const t of tokens) all.push({ ...t, collection: colName, category: catName });
+    }
+  }
+  return all;
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll(".mode-btn").forEach(b => {
+    b.classList.toggle("active", b.textContent === mode);
+  });
+  render();
+}
+
+function filterTokens() {
+  searchQuery = document.getElementById("search").value.toLowerCase();
+  render();
+}
+
+function selectCategory(cat) {
+  currentCategory = currentCategory === cat ? null : cat;
+  render();
+}
+
+function renderSidebar() {
+  let html = "";
+  for (const [colName, col] of Object.entries(data)) {
+    html += `<div class="cat-section">${colName}</div>`;
+    for (const [catName, tokens] of Object.entries(col.categories)) {
+      const isActive = currentCategory === colName + "/" + catName;
+      html += `<div class="cat-item${isActive ? " active" : ""}" onclick="selectCategory('${colName}/${catName}')">
+        <span>${catName}</span><span class="cat-count">${tokens.length}</span>
+      </div>`;
+    }
+  }
+  document.getElementById("categories").innerHTML = html;
+}
+
+function renderMain() {
+  let tokens = getAllTokens();
+
+  // Filter by category
+  if (currentCategory) {
+    const [col, cat] = currentCategory.split("/");
+    tokens = tokens.filter(t => t.collection === col && t.category === cat);
+  }
+
+  // Filter by search
+  if (searchQuery) {
+    tokens = tokens.filter(t => t.fullName.toLowerCase().includes(searchQuery) || t.name.toLowerCase().includes(searchQuery));
+  }
+
+  const colors = tokens.filter(t => t.resolvedType === "COLOR");
+  const floats = tokens.filter(t => t.resolvedType === "FLOAT");
+
+  // Stats
+  let html = `<div class="stats">
+    <div class="stat"><div class="stat-value">${tokens.length}</div><div class="stat-label">Tokens</div></div>
+    <div class="stat"><div class="stat-value">${colors.length}</div><div class="stat-label">Colors</div></div>
+    <div class="stat"><div class="stat-value">${floats.length}</div><div class="stat-label">Numbers</div></div>
+  </div>`;
+
+  // Color scale if viewing a single color category
+  if (currentCategory && colors.length > 2 && colors.length === tokens.length) {
+    html += `<div class="color-scale">`;
+    for (const t of colors) {
+      const v = t.values[currentMode];
+      if (v?.hex) {
+        const textColor = isLight(v.hex) ? "#000" : "#fff";
+        html += `<div class="color-scale-item" style="background:${v.hex}" title="${t.fullName}: ${v.hex}">
+          <div class="color-scale-label" style="color:${textColor}">${t.name}</div>
+        </div>`;
+      }
+    }
+    html += `</div>`;
+  }
+
+  // Token list
+  if (tokens.length === 0) {
+    html += `<div class="empty"><h3>No tokens found</h3><p>Try a different search or category.</p></div>`;
+  } else {
+    html += `<div class="token-grid">`;
+    html += `<div class="token-row header"><span>Token</span><span>${currentMode}</span><span>${currentMode === "Light" ? "Dark" : "Light"}</span><span></span></div>`;
+
+    for (const t of tokens) {
+      const v1 = t.values[currentMode];
+      const v2 = t.values[currentMode === "Light" ? "Dark" : "Light"];
+      html += `<div class="token-row">`;
+      // Name
+      html += `<div><div class="token-name">${t.name}</div><div class="token-path">${t.fullName}</div>${t.description ? `<div class="token-desc">${t.description}</div>` : ""}</div>`;
+      // Value 1
+      html += renderValue(v1);
+      // Value 2
+      html += renderValue(v2);
+      // Copy
+      html += `<button class="token-copy" onclick="copyToken(this, '${t.fullName}')" title="Copy token path"><svg><use href="#icon-copy"/></svg></button>`;
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+
+  document.getElementById("main").innerHTML = html;
+}
+
+function renderValue(v) {
+  if (!v) return `<div class="token-value">—</div>`;
+  if (v.type === "COLOR") {
+    return `<div class="token-value"><span class="token-swatch" style="background:${v.hex}"></span><span class="token-hex">${v.hex}</span></div>`;
+  }
+  if (v.type === "FLOAT") {
+    const maxBar = 120;
+    const barW = Math.min(v.value, maxBar);
+    return `<div class="token-value"><span class="token-float">${v.value}${v.value <= 384 && v.value > 0 ? "px" : ""}</span></div>`;
+  }
+  if (v.type === "ALIAS") {
+    return `<div class="token-value"><span style="color:#7c3aed;font-size:10px;">→ ${v.ref}</span></div>`;
+  }
+  return `<div class="token-value">${JSON.stringify(v.value)}</div>`;
+}
+
+function isLight(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return (r*299 + g*587 + b*114) / 1000 > 128;
+}
+
+function copyToken(btn, path) {
+  navigator.clipboard.writeText(path).then(() => {
+    btn.classList.add("copied");
+    setTimeout(() => btn.classList.remove("copied"), 1200);
+  });
+}
+
+function render() {
+  renderSidebar();
+  renderMain();
+}
+
+render();
+</script>
+</body>
+</html>
