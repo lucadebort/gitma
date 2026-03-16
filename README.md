@@ -12,102 +12,86 @@
 
 Gitma keeps your Figma components and your React codebase in perfect sync. Designer changes a variant? You see the diff. Developer adds a prop? Gitma writes it to Figma. No copy-paste, no "did you update the component?", no drift.
 
-## 3 steps to start
+## Setup (once)
 
 ```bash
-# 1. Install
-pnpm add -D gitma
+# 1. Add the figma-console MCP server to Claude Code
+claude mcp add figma-console -- npx -y figma-console-mcp@latest
 
-# 2. Init
-npx gitma init
+# 2. Install the bridge plugin in Figma Desktop
+npx figma-console-mcp@latest --print-path
+# → Import the manifest in Figma: Plugins → Development → Import plugin from manifest
 
-# 3. Sync
+# 3. Install the /gitma command
+curl -o ~/.claude/commands/gitma.md https://raw.githubusercontent.com/lucadebort/gitma/main/commands/gitma.md
+```
+
+## Use (every day)
+
+Open Figma Desktop with your file. Run the bridge plugin. Then in Claude Code:
+
+```
 /gitma
 ```
 
-That's it. Type `/gitma` in Claude Code and it handles the rest — reads Figma, compares with your code, shows what's different, and asks what you want to do.
+That's it. Claude reads Figma, compares with your code, shows what's different, and asks what you want to do.
+
+```
+Figma file: "📖 Design System" (32 components)
+Code: src/components/ (18 components)
+
+✓ 15 in sync
+↓ 2 with Figma drift:
+  Button: +size=xl (Figma added variant value)
+  Badge: +isLoading (Figma added boolean prop)
+↑ 1 with code drift:
+  Modal: +onClose callback (code added prop)
+
+Want me to pull from Figma, push to Figma, or show details?
+```
+
+### Pull from Figma → Code
+
+"Pull from Figma" — Claude updates your TypeScript interfaces, function params, and types to match Figma. Surgical AST edits, never touches your JSX.
+
+### Push from Code → Figma
+
+"Push to Figma" — Claude writes new props, states, and variant values directly to your Figma file via figma_execute. Including cloning variant children with correct positioning.
 
 ## What you need
 
-- [Claude Code](https://claude.ai/claude-code) with figma-console MCP server
-- Figma Desktop with the [bridge plugin](https://github.com/nicholascooke/figma-console-mcp)
-- A React/TypeScript codebase
+- [Claude Code](https://claude.ai/claude-code)
+- Figma Desktop with the bridge plugin
+- React/TypeScript components
 
-No API tokens. No config files to maintain. No CLI to memorize.
+No API tokens. No npm packages in your project. No CLI to learn.
 
-## What it does
+## What it can sync
 
-```
-/gitma
+| From Figma | To Code |
+|-----------|---------|
+| Variant property (enum) | Union type + prop |
+| Boolean property | `boolean` prop or state |
+| Text property | `string` prop |
+| Instance swap | `ReactNode` slot |
+| Variant values (sm, md, lg) | Union type values |
 
-  gitma status
-
-  ✓ 12 component(s) in sync
-  ↓ 3 component(s) with Figma drift:
-    ↓ Button (2 changes)
-    ↓ Badge (1 change)
-    ↓ Input (1 change)
-  ↑ 1 component(s) with code drift:
-    ↑ Modal (1 change)
-```
-
-Then you say what you want:
-
-- **"pull from Figma"** — updates your TypeScript interfaces, function params, and types to match Figma
-- **"push to Figma"** — writes new props, states, and variant values directly to your Figma file
-- **"show me the diff"** — detailed view of what changed and where
-- **"resolve conflicts"** — when both sides changed the same thing
-
-### What Gitma writes to your code
-
-Surgical AST edits — no file rewrites:
-
-- Adds/removes props in the TypeScript interface
-- Adds/removes params in function destructuring (with defaults)
-- Updates variant union types
-- Adds `ReactNode` import for slots
-
-Never touches your JSX or component logic. If a prop is removed, TypeScript shows you where to clean up.
-
-### What Gitma writes to Figma
-
-Via Claude Code's figma-console:
-
-- Add/remove boolean, text, and instance swap properties
-- Add variant values (clones from nearest existing, repositions correctly)
-- Remove variant values
-- Create/update/delete design token variables
-
-## How it works under the hood
-
-```
-Figma Desktop
-    ↕ bridge plugin
-Claude Code (figma-console)
-    ↕ figma_execute
-/gitma skill
-    ↕ stdin/files
-Gitma CLI
-    ↕ AST edits
-Your code
-```
-
-Gitma itself never connects to Figma. It's a pure data processor. Claude Code reads Figma, passes the data to Gitma, and applies write-back operations. This means:
-
-- No port conflicts, no WebSocket servers, no auth tokens
-- Works with unpublished components
-- Reads and writes in real-time to the open Figma file
+| From Code | To Figma |
+|-----------|---------|
+| New boolean prop | `addComponentProperty("BOOLEAN")` |
+| New string prop | `addComponentProperty("TEXT")` |
+| New slot | `addComponentProperty("INSTANCE_SWAP")` |
+| Removed prop | `deleteComponentProperty()` |
+| New variant value | Clone + rename + reposition |
 
 ## Configuration
 
-`npx gitma init` creates `.gitma/config.json`:
+On first run, `/gitma` creates `.gitma/config.json`:
 
 ```json
 {
   "figmaFileKey": "your-figma-file-key",
-  "componentGlobs": ["src/components/**/*.tsx"],
-  "tokenFile": "tokens.tokens.json",
-  "tokenFormat": "css-vars"
+  "componentGlobs": ["src/components/**/*.tsx"]
 }
 ```
 
@@ -141,28 +125,14 @@ When Figma properties don't match code props 1:1:
 }
 ```
 
-## Design tokens
+## Commands
 
-W3C Design Tokens format (`.tokens.json`). Syncs colors, dimensions, numbers, font families, font weights, and durations to Figma variables. Composite types (shadow, border, typography) are preserved but not synced.
-
-## All commands
-
-```bash
-gitma init                        # interactive setup
-gitma status                      # what's in sync, what's drifted
-gitma diff --code                 # detailed code changes
-gitma diff --figma                # detailed Figma changes
-gitma pull figma --apply          # Figma → schema
-gitma pull code --apply           # schema → code files
-gitma push figma-to-code --apply  # Figma → schema → code
-gitma push code-to-figma --apply  # code → schema → Figma write ops
-gitma stage Button                # stage one component
-gitma commit -m "message"         # commit baseline
-gitma resolve                     # handle conflicts
-gitma tokens pull figma --apply   # Figma variables → .tokens.json
-gitma tokens push figma --apply   # .tokens.json → Figma write ops
-gitma figma refresh               # import Figma data (used by /gitma skill)
-gitma figma status                # show Figma snapshot info
+```
+/gitma              → read both sides, show status, suggest actions
+/gitma status       → show sync status
+/gitma pull figma   → Figma changes → apply to code
+/gitma push code    → code changes → apply to Figma
+/gitma diff         → detailed diff both directions
 ```
 
 ## License
