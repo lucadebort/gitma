@@ -22,27 +22,27 @@ export const previewCommand = new Command("preview")
     const projectRoot = process.cwd();
 
     // 1. Inspect & assemble
-    console.log(chalk.dim("\n  Inspecting Figma data...\n"));
+    console.log(chalk.dim("\n  🔍 Inspecting Figma data...\n"));
 
     const data = assemblePreviewData(projectRoot);
     const { inspect } = data;
 
     // Report what was found
     if (!inspect.hasComponents && !inspect.hasVariables) {
-      console.log(chalk.yellow("  No Figma data found."));
+      console.log(chalk.yellow("  ⚠️  No Figma data found."));
       console.log(chalk.dim("  Run /gitma to pull from Figma first, or use:"));
       console.log(chalk.dim("    gitma figma import <snapshot.json>\n"));
       return;
     }
 
     if (inspect.hasComponents) {
-      console.log(chalk.green(`  Components: ${inspect.componentCount}`));
+      console.log(chalk.green(`  📦 Components: ${inspect.componentCount}`));
     } else {
       console.log(chalk.dim("  Components: none found"));
     }
 
     if (inspect.hasVariables) {
-      console.log(chalk.green(`  Variables: ${inspect.variableCount} (${inspect.collectionCount} collections)`));
+      console.log(chalk.green(`  🎨 Variables: ${inspect.variableCount} (${inspect.collectionCount} collections)`));
       console.log(chalk.dim(`  Modes: ${inspect.modeNames.join(", ")}`));
     } else {
       console.log(chalk.dim("  Variables: none found"));
@@ -61,7 +61,7 @@ export const previewCommand = new Command("preview")
     }
     writeFileSync(outputPath, html, "utf-8");
 
-    console.log(chalk.green(`  Preview: ${opts.output}`));
+    console.log(chalk.green(`  ✅ Preview: ${opts.output}`));
 
     // 4. Open in browser
     if (opts.open !== false) {
@@ -69,7 +69,7 @@ export const previewCommand = new Command("preview")
         : process.platform === "win32" ? "start"
         : "xdg-open";
       exec(`${openCmd} "${outputPath}"`);
-      console.log(chalk.dim("  Opened in browser.\n"));
+      console.log(chalk.dim("  🌐 Opened in browser.\n"));
     } else {
       console.log();
     }

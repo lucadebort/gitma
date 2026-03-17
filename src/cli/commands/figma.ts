@@ -62,7 +62,7 @@ figmaCommand
 
     saveSnapshot(projectRoot, "figma", schemas, "figma");
 
-    console.log(chalk.green(`  Figma snapshot saved: ${schemas.length} component(s)`));
+    console.log(chalk.green(`  ✅ Figma snapshot saved: ${schemas.length} component(s)`));
 
     // Show summary
     const withVariants = schemas.filter((s) => s.variants.length > 0).length;

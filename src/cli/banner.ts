@@ -42,7 +42,7 @@ export async function checkForUpdates(currentVersion: string): Promise<void> {
 
     if (latest !== currentVersion && isNewer(latest, currentVersion)) {
       console.log(
-        chalk.yellow(`  Update available: ${currentVersion} → ${latest}`),
+        chalk.yellow(`  🆕 Update available: ${currentVersion} → ${latest}`),
       );
       console.log(
         chalk.dim(`  Run ${chalk.cyan("/gitma update")} or ${chalk.cyan("gitma update")} to upgrade.\n`),

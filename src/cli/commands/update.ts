@@ -13,7 +13,7 @@ const COMMAND_URL =
 export const updateCommand = new Command("update")
   .description("Update the /gitma command file from GitHub")
   .action(async () => {
-    console.log(chalk.bold("  Updating /gitma command...\n"));
+    console.log(chalk.bold("  🔄 Updating /gitma command...\n"));
 
     // Detect where the command file is installed
     const projectRoot = process.cwd();
@@ -59,8 +59,8 @@ export const updateCommand = new Command("update")
         console.log(chalk.green(`  Updated (${target.label}): ${target.path}`));
       }
 
-      console.log(chalk.green.bold("\n  Done!\n"));
+      console.log(chalk.green.bold("\n  ✅ Done!\n"));
     } catch {
-      console.log(chalk.red("  Failed to download. Check your network connection."));
+      console.log(chalk.red("  ❌ Failed to download. Check your network connection."));
     }
   });

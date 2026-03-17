@@ -56,7 +56,7 @@ async function pullFromFigma(
   }
 
   if (changes.length === 0) {
-    console.log(chalk.green("\n  Figma is in sync with committed schema.\n"));
+    console.log(chalk.green("\n  ✨ Figma is in sync with committed schema.\n"));
     return;
   }
 
@@ -65,7 +65,7 @@ async function pullFromFigma(
 
   if (opts.apply) {
     saveSnapshot(projectRoot, "committed", figmaSchemas, "figma");
-    console.log(chalk.green(`\n  Pulled ${changes.length} change(s) from Figma into committed schema.\n`));
+    console.log(chalk.green(`\n  ✅ Pulled ${changes.length} change(s) from Figma into committed schema.\n`));
   } else {
     console.log(chalk.dim("\n  Dry run. Use --apply to commit these changes.\n"));
   }
@@ -86,7 +86,7 @@ async function pullFromCode(
   }
 
   if (changes.length === 0) {
-    console.log(chalk.green("\n  Code is in sync with committed schema.\n"));
+    console.log(chalk.green("\n  ✨ Code is in sync with committed schema.\n"));
     return;
   }
 
@@ -143,5 +143,5 @@ async function pullFromCode(
     }
   }
 
-  console.log(chalk.green(`\n  Done: ${totalApplied} applied, ${totalSkipped} skipped.\n`));
+  console.log(chalk.green(`\n  ✅ Done: ${totalApplied} applied, ${totalSkipped} skipped.\n`));
 }

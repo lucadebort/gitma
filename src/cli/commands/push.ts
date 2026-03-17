@@ -58,7 +58,7 @@ async function pushFigmaToCode(
   }
 
   if (figmaChanges.length === 0) {
-    console.log(chalk.green("\n  No changes in Figma. Everything is in sync.\n"));
+    console.log(chalk.green("\n  ✨ No changes in Figma. Everything is in sync.\n"));
     return;
   }
 
@@ -82,7 +82,7 @@ async function pushFigmaToCode(
   }
 
   if (codeChanges.length === 0) {
-    console.log(chalk.green("  Code is already in sync with Figma. Schema updated.\n"));
+    console.log(chalk.green("  ✨ Code is already in sync with Figma. Schema updated.\n"));
     return;
   }
 
@@ -121,7 +121,7 @@ async function pushFigmaToCode(
     }
   }
 
-  console.log(chalk.green(`\n  Push complete: schema updated, ${totalApplied} code change(s) applied.\n`));
+  console.log(chalk.green(`\n  ✅ Push complete: schema updated, ${totalApplied} code change(s) applied.\n`));
 }
 
 async function pushCodeToFigma(
@@ -140,7 +140,7 @@ async function pushCodeToFigma(
   }
 
   if (changes.length === 0) {
-    console.log(chalk.green("\n  No changes in code. Everything is in sync.\n"));
+    console.log(chalk.green("\n  ✨ No changes in code. Everything is in sync.\n"));
     return;
   }
 

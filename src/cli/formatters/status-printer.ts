@@ -14,7 +14,7 @@ export interface StatusSummary {
 export function formatStatus(status: StatusSummary): string {
   const lines: string[] = [];
 
-  lines.push(chalk.bold("\n  gitma status\n"));
+  lines.push(chalk.bold("\n  📊 gitma status\n"));
 
   // Synced components
   if (status.synced.length > 0) {
@@ -46,7 +46,7 @@ export function formatStatus(status: StatusSummary): string {
 
   // No changes
   if (status.figmaChanges.length === 0 && status.codeChanges.length === 0 && status.synced.length > 0) {
-    lines.push(chalk.green("\n  Everything is in sync."));
+    lines.push(chalk.green("\n  ✨ Everything is in sync."));
   }
 
   if (status.figmaChanges.length === 0 && status.codeChanges.length === 0 && status.synced.length === 0) {

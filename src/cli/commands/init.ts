@@ -61,7 +61,7 @@ export const initCommand = new Command("init")
       }
     }
 
-    console.log(chalk.dim("  Setting up your project...\n"));
+    console.log(chalk.dim("  ⚙️  Setting up your project...\n"));
 
     // Interactive or flag-based
     const isInteractive = !opts.figmaKey;
@@ -183,14 +183,14 @@ export const initCommand = new Command("init")
     saveSnapshot(projectRoot, "committed", [], "manual");
 
     // --- Summary ---
-    console.log(chalk.green.bold("  Done!\n"));
+    console.log(chalk.green.bold("  ✅ Done!\n"));
     console.log(chalk.dim("  Created:"));
     console.log(chalk.dim("    .gitma/config.json"));
     console.log(chalk.dim("    .gitma/snapshots/committed.json"));
     console.log();
 
     // --- Next steps ---
-    console.log(chalk.bold("  Next steps:\n"));
+    console.log(chalk.bold("  🚀 Next steps:\n"));
     console.log(`    1. ${chalk.cyan("gitma status")}           See what's in your code and Figma`);
     console.log(`    2. ${chalk.cyan('gitma commit -m "init"')}  Set your code as the baseline`);
     console.log(`    3. ${chalk.cyan("gitma diff --figma")}      See what's different in Figma`);

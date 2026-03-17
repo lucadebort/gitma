@@ -31,7 +31,7 @@ export const commitCommand = new Command("commit")
     const changes = diffSchemas(committed, components);
 
     if (changes.length === 0) {
-      console.log(chalk.dim("\n  Nothing to commit — schema is up to date.\n"));
+      console.log(chalk.dim("\n  ✨ Nothing to commit — schema is up to date.\n"));
       return;
     }
 
@@ -42,5 +42,5 @@ export const commitCommand = new Command("commit")
     saveSnapshot(projectRoot, "committed", components, opts.source);
 
     const msg = opts.message ?? `${changes.length} change(s) from ${opts.source}`;
-    console.log(chalk.green(`\n  Committed: ${msg}\n`));
+    console.log(chalk.green(`\n  ✅ Committed: ${msg}\n`));
   });

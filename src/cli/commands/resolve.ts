@@ -33,7 +33,7 @@ export const resolveCommand = new Command("resolve")
     const { merged, conflicts } = mergeSchemas(committed, figmaSnapshot, codeComponents);
 
     if (conflicts.length === 0) {
-      console.log(chalk.green("\n  No conflicts. All changes can be merged cleanly.\n"));
+      console.log(chalk.green("\n  ✨ No conflicts. All changes can be merged cleanly.\n"));
 
       if (merged.length > 0) {
         console.log(chalk.dim(`  ${merged.length} non-conflicting change(s) ready to commit.`));
@@ -42,7 +42,7 @@ export const resolveCommand = new Command("resolve")
       return;
     }
 
-    console.log(chalk.bold(`\n  ${conflicts.length} conflict(s) found:\n`));
+    console.log(chalk.bold(`\n  ⚠️  ${conflicts.length} conflict(s) found:\n`));
     console.log(formatConflicts(conflicts));
 
     if (opts.take) {
@@ -59,7 +59,7 @@ export const resolveCommand = new Command("resolve")
         : codeComponents;
 
       saveSnapshot(projectRoot, "committed", resolvedComponents, opts.take as "figma" | "code");
-      console.log(chalk.green(`  Resolved ${conflicts.length} conflict(s). Schema updated from ${opts.take}.\n`));
+      console.log(chalk.green(`  ✅ Resolved ${conflicts.length} conflict(s). Schema updated from ${opts.take}.\n`));
     } else {
       console.log(chalk.dim("\n  To auto-resolve, run:"));
       console.log(chalk.dim("    gitma resolve --take figma   (take all Figma versions)"));
