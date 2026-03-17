@@ -74,7 +74,7 @@ async function pushFigmaToCode(
   console.log(chalk.dim("  Applying to code..."));
   saveSnapshot(projectRoot, "committed", figmaSchemas, "figma");
 
-  const codeComponents = readCodeComponents(projectRoot, config.componentGlobs);
+  const codeComponents = readCodeComponents(projectRoot, config.componentGlobs, undefined, config.framework);
 
   let codeChanges = diffSchemas(codeComponents, figmaSchemas);
   if (opts.component) {
@@ -112,6 +112,7 @@ async function pushFigmaToCode(
       { targetSchema, changes: componentChanges },
       undefined,
       config.formatCommand,
+      config.framework,
     );
 
     totalApplied += result.appliedChanges.length;
@@ -131,7 +132,7 @@ async function pushCodeToFigma(
   opts: { apply?: boolean; component?: string },
 ) {
   // Read code
-  const codeComponents = readCodeComponents(projectRoot, config.componentGlobs);
+  const codeComponents = readCodeComponents(projectRoot, config.componentGlobs, undefined, config.framework);
 
   // Diff code vs committed
   let changes = diffSchemas(committed, codeComponents);

@@ -4,6 +4,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { KNOWN_FRAMEWORKS, SUPPORTED_FRAMEWORKS } from "../code-adapter/framework-profile.js";
 
 const CONFIG_DIR = ".gitma";
 const CONFIG_FILE = "config.json";
@@ -11,7 +12,9 @@ const CONFIG_FILE = "config.json";
 export interface ProjectConfig {
   /** Figma file key */
   figmaFileKey?: string;
-  /** Glob patterns to find React component files */
+  /** Framework for code adapter (default: "react") */
+  framework?: string;
+  /** Glob patterns to find component files */
   componentGlobs: string[];
   /** Path to .tokens.json file */
   tokenFile?: string;
@@ -68,7 +71,18 @@ export function loadConfig(projectRoot: string): ProjectConfig {
   const path = configPath(projectRoot);
   if (!existsSync(path)) return { ...DEFAULT_CONFIG };
   const json = readFileSync(path, "utf-8");
-  return { ...DEFAULT_CONFIG, ...JSON.parse(json) };
+  const config = { ...DEFAULT_CONFIG, ...JSON.parse(json) };
+
+  // Validate framework if specified
+  if (config.framework && !KNOWN_FRAMEWORKS.includes(config.framework)) {
+    throw new Error(
+      `Unknown framework "${config.framework}" in config. ` +
+      `Known frameworks: ${KNOWN_FRAMEWORKS.join(", ")}. ` +
+      `Fully supported: ${SUPPORTED_FRAMEWORKS.join(", ")}.`,
+    );
+  }
+
+  return config;
 }
 
 export function saveConfig(projectRoot: string, config: ProjectConfig): void {

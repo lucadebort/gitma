@@ -1,24 +1,27 @@
 /**
- * Code reader — extract component schemas from React/TypeScript source files.
+ * Code reader — extract component schemas from source files.
  *
  * Uses ts-morph to parse AST and extract props, variants, slots, and states.
+ * Framework-specific behavior is delegated to a FrameworkProfile.
  */
 
 import { Project, SyntaxKind, type SourceFile, type Type, type Symbol as TsSymbol } from "ts-morph";
 import type { ComponentSchema, Prop, Variant, Slot, State, PropType } from "../schema/types.js";
 import type { ExtractedComponent, ExtractedProp } from "./types.js";
+import type { FrameworkProfile } from "./framework-profile.js";
+import { getFrameworkProfile } from "./framework-profile.js";
 
 // ---------------------------------------------------------------------------
 // Project setup
 // ---------------------------------------------------------------------------
 
-export function createProject(tsConfigPath?: string): Project {
+export function createProject(profile: FrameworkProfile, tsConfigPath?: string): Project {
   if (tsConfigPath) {
     return new Project({ tsConfigFilePath: tsConfigPath });
   }
   return new Project({
     compilerOptions: {
-      jsx: 4, // JsxEmit.ReactJSX
+      jsx: profile.jsxEmit,
       esModuleInterop: true,
       strict: true,
     },
@@ -28,24 +31,6 @@ export function createProject(tsConfigPath?: string): Project {
 // ---------------------------------------------------------------------------
 // Component detection
 // ---------------------------------------------------------------------------
-
-const REACT_NODE_TYPES = new Set([
-  "ReactNode",
-  "React.ReactNode",
-  "ReactElement",
-  "React.ReactElement",
-  "JSX.Element",
-]);
-
-const CALLBACK_PATTERNS = [
-  /^\(.*\)\s*=>\s*/,
-  /^Function$/,
-  /^EventHandler/,
-  /^MouseEventHandler/,
-  /^ChangeEventHandler/,
-  /^FormEventHandler/,
-  /^KeyboardEventHandler/,
-];
 
 const STATE_PROP_NAMES = new Set([
   "disabled",
@@ -60,18 +45,6 @@ const STATE_PROP_NAMES = new Set([
   "pressed",
   "readOnly",
 ]);
-
-function isReactNodeType(typeText: string): boolean {
-  const trimmed = typeText.trim();
-  if (REACT_NODE_TYPES.has(trimmed)) return true;
-  // Handle unions containing ReactNode
-  if (trimmed.includes("ReactNode") || trimmed.includes("ReactElement")) return true;
-  return false;
-}
-
-function isCallbackType(typeText: string): boolean {
-  return CALLBACK_PATTERNS.some((p) => p.test(typeText));
-}
 
 /**
  * Extract string literal values from a union type.
@@ -100,7 +73,7 @@ function extractUnionLiterals(type: Type): string[] | undefined {
 // Prop extraction from type/interface
 // ---------------------------------------------------------------------------
 
-function extractPropsFromSymbols(symbols: TsSymbol[]): ExtractedProp[] {
+function extractPropsFromSymbols(symbols: TsSymbol[], profile: FrameworkProfile): ExtractedProp[] {
   const props: ExtractedProp[] = [];
 
   for (const symbol of symbols) {
@@ -134,14 +107,16 @@ function extractPropsFromSymbols(symbols: TsSymbol[]): ExtractedProp[] {
     // Check for union literals (variant candidates)
     const unionValues = extractUnionLiterals(type);
 
+    const isCallback = profile.callbackPatterns.some((p) => p.test(typeText));
+
     props.push({
       name,
       rawType: typeText,
       optional,
       description,
       unionValues,
-      isReactNode: isReactNodeType(typeText),
-      isCallback: isCallbackType(typeText),
+      isSlot: profile.isSlotType(typeText),
+      isCallback,
     });
   }
 
@@ -152,7 +127,11 @@ function extractPropsFromSymbols(symbols: TsSymbol[]): ExtractedProp[] {
 // Component extraction from source file
 // ---------------------------------------------------------------------------
 
-function extractComponentsFromFile(sourceFile: SourceFile, projectRoot: string): ExtractedComponent[] {
+function extractComponentsFromFile(
+  sourceFile: SourceFile,
+  projectRoot: string,
+  profile: FrameworkProfile,
+): ExtractedComponent[] {
   const components: ExtractedComponent[] = [];
   const filePath = sourceFile.getFilePath().replace(projectRoot + "/", "");
 
@@ -178,7 +157,7 @@ function extractComponentsFromFile(sourceFile: SourceFile, projectRoot: string):
     const propsType = propsParam.getType();
     const propsTypeName = propsParam.getTypeNode()?.getText();
     const symbols = propsType.getProperties();
-    const props = extractPropsFromSymbols(symbols);
+    const props = extractPropsFromSymbols(symbols, profile);
 
     // Extract default values from destructuring
     const bindingPattern = propsParam.getFirstChildByKind(SyntaxKind.ObjectBindingPattern);
@@ -218,8 +197,7 @@ function extractComponentsFromFile(sourceFile: SourceFile, projectRoot: string):
     if (!initializer) continue;
 
     const initText = initializer.getText();
-    const isForwardRef = initText.includes("forwardRef");
-    const isMemo = initText.includes("memo(");
+    const { isForwardRef, isMemo } = profile.detectWrappers(initText);
 
     // Try to find the props type from the arrow function or forwardRef
     const type = varDecl.getType();
@@ -231,7 +209,7 @@ function extractComponentsFromFile(sourceFile: SourceFile, projectRoot: string):
         const propsType = params[0].getValueDeclaration()?.getType() ?? params[0].getDeclaredType();
         const propsTypeName = propsType.getSymbol()?.getName();
         const symbols = propsType.getProperties();
-        const props = extractPropsFromSymbols(symbols);
+        const props = extractPropsFromSymbols(symbols, profile);
 
         components.push({
           name,
@@ -285,15 +263,15 @@ function getLeadingComment(node: { getLeadingCommentRanges(): Array<{ getText():
 // Schema conversion
 // ---------------------------------------------------------------------------
 
-function extractedToSchema(extracted: ExtractedComponent): ComponentSchema {
+function extractedToSchema(extracted: ExtractedComponent, profile: FrameworkProfile): ComponentSchema {
   const props: Prop[] = [];
   const variants: Variant[] = [];
   const slots: Slot[] = [];
   const states: State[] = [];
 
   for (const ep of extracted.props) {
-    // Skip internal React props
-    if (ep.name === "ref" || ep.name === "key" || ep.name === "children" && ep.isReactNode) {
+    // Skip internal framework props
+    if (profile.internalPropNames.has(ep.name) || (ep.name === "children" && ep.isSlot)) {
       if (ep.name === "children") {
         slots.push({
           name: "children",
@@ -304,8 +282,8 @@ function extractedToSchema(extracted: ExtractedComponent): ComponentSchema {
       continue;
     }
 
-    // Slots: ReactNode props
-    if (ep.isReactNode) {
+    // Slots: renderable child content
+    if (ep.isSlot) {
       slots.push({
         name: ep.name,
         required: !ep.optional,
@@ -414,18 +392,21 @@ function parseDefaultValue(raw: string, type: PropType): string | number | boole
 // ---------------------------------------------------------------------------
 
 /**
- * Read React components from source files and convert to schema.
+ * Read components from source files and convert to schema.
  *
  * @param projectRoot - Absolute path to project root
- * @param globs - Glob patterns to find component files, e.g. ["src/components/**\/*.tsx"]
+ * @param globs - Glob patterns to find component files
  * @param tsConfigPath - Optional path to tsconfig.json
+ * @param framework - Framework name (default: "react")
  */
 export function readCodeComponents(
   projectRoot: string,
   globs: string[],
   tsConfigPath?: string,
+  framework?: string,
 ): ComponentSchema[] {
-  const project = createProject(tsConfigPath);
+  const profile = getFrameworkProfile(framework);
+  const project = createProject(profile, tsConfigPath);
 
   for (const glob of globs) {
     project.addSourceFilesAtPaths(`${projectRoot}/${glob}`);
@@ -434,9 +415,9 @@ export function readCodeComponents(
   const schemas: ComponentSchema[] = [];
 
   for (const sourceFile of project.getSourceFiles()) {
-    const extracted = extractComponentsFromFile(sourceFile, projectRoot);
+    const extracted = extractComponentsFromFile(sourceFile, projectRoot, profile);
     for (const component of extracted) {
-      schemas.push(extractedToSchema(component));
+      schemas.push(extractedToSchema(component, profile));
     }
   }
 
@@ -449,11 +430,13 @@ export function readCodeComponents(
 export function readComponentsFromSource(
   source: string,
   fileName: string = "Component.tsx",
+  framework?: string,
 ): ComponentSchema[] {
+  const profile = getFrameworkProfile(framework);
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: {
-      jsx: 4,
+      jsx: profile.jsxEmit,
       esModuleInterop: true,
       strict: true,
     },
@@ -463,9 +446,9 @@ export function readComponentsFromSource(
 
   const schemas: ComponentSchema[] = [];
   for (const sourceFile of project.getSourceFiles()) {
-    const extracted = extractComponentsFromFile(sourceFile, "");
+    const extracted = extractComponentsFromFile(sourceFile, "", profile);
     for (const component of extracted) {
-      schemas.push(extractedToSchema(component));
+      schemas.push(extractedToSchema(component, profile));
     }
   }
 

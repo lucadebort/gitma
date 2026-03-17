@@ -25,6 +25,8 @@ export const statusCommand = new Command("status")
     const codeComponents = readCodeComponents(
       projectRoot,
       config.componentGlobs,
+      undefined,
+      config.framework,
     );
 
     // Diff code vs committed

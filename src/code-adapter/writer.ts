@@ -1,8 +1,9 @@
 /**
- * Code writer — apply schema changes to React/TypeScript source files.
+ * Code writer — apply schema changes to source files.
  *
  * Uses ts-morph for surgical AST modifications that preserve
  * existing code, formatting, and comments.
+ * Framework-specific behavior is delegated to a FrameworkProfile.
  */
 
 import {
@@ -17,6 +18,8 @@ import {
 } from "ts-morph";
 import type { SchemaChange } from "../diff-engine/types.js";
 import type { ComponentSchema, Prop, Variant, Slot, State } from "../schema/types.js";
+import type { FrameworkProfile } from "./framework-profile.js";
+import { getFrameworkProfile } from "./framework-profile.js";
 import { formatFile } from "../shared/format.js";
 
 // ---------------------------------------------------------------------------
@@ -39,13 +42,13 @@ export interface WriteResult {
 // Project setup
 // ---------------------------------------------------------------------------
 
-function createWriteProject(tsConfigPath?: string): Project {
+function createWriteProject(profile: FrameworkProfile, tsConfigPath?: string): Project {
   if (tsConfigPath) {
     return new Project({ tsConfigFilePath: tsConfigPath });
   }
   return new Project({
     compilerOptions: {
-      jsx: 4, // ReactJSX
+      jsx: profile.jsxEmit,
       esModuleInterop: true,
       strict: true,
     },
@@ -59,10 +62,8 @@ function createWriteProject(tsConfigPath?: string): Project {
 /**
  * Detect paired add+remove on the same field name across prop/slot targets.
  * Convert them to "modified" type changes instead.
- *
- * Example: "removed slot children" + "added prop children" → modify type from ReactNode to string.
  */
-function preprocessConversions(changes: SchemaChange[]): SchemaChange[] {
+function preprocessConversions(changes: SchemaChange[], profile: FrameworkProfile): SchemaChange[] {
   const result: SchemaChange[] = [];
   const addedByName = new Map<string, SchemaChange>();
   const removedByName = new Map<string, SchemaChange>();
@@ -104,10 +105,11 @@ function preprocessConversions(changes: SchemaChange[]): SchemaChange[] {
         // Convert to a "modify type" change — the prop already exists in the interface
         // with a different type. We change the type instead of add+remove.
         const addedTarget = change.target;
-        const newType = addedTarget === "slot" ? "ReactNode"
+        const newType = addedTarget === "slot" ? profile.slotTypeString
           : addedTarget === "prop" ? propToTypeString(
               (change.after as Prop) ?? { type: "string" } as Prop,
               "prop",
+              profile,
             )
           : "unknown";
         result.push({
@@ -171,11 +173,12 @@ function addPropToInterface(
   iface: InterfaceDeclaration,
   prop: Prop | Variant | Slot,
   kind: "prop" | "variant" | "slot",
+  profile: FrameworkProfile,
 ): boolean {
   // Check if prop already exists
   if (iface.getProperty(prop.name)) return false;
 
-  const typeStr = propToTypeString(prop, kind);
+  const typeStr = propToTypeString(prop, kind, profile);
   const isOptional = kind === "prop" ? !(prop as Prop).required
     : kind === "variant" ? true
     : !(prop as Slot).required;
@@ -195,6 +198,7 @@ function addPropToInterface(
 function propToTypeString(
   prop: Prop | Variant | Slot,
   kind: "prop" | "variant" | "slot",
+  profile: FrameworkProfile,
 ): string {
   if (kind === "variant") {
     const variant = prop as Variant;
@@ -202,7 +206,7 @@ function propToTypeString(
   }
 
   if (kind === "slot") {
-    return "ReactNode";
+    return profile.slotTypeString;
   }
 
   const p = prop as Prop;
@@ -211,7 +215,7 @@ function propToTypeString(
     case "number": return "number";
     case "boolean": return "boolean";
     case "enum": return p.values?.map((v) => `"${v}"`).join(" | ") ?? "string";
-    case "node": return "ReactNode";
+    case "node": return profile.nodeTypeString;
     case "callback": return p.rawType ?? "() => void";
     case "object": return p.rawType ?? "Record<string, unknown>";
     default: return "unknown";
@@ -444,33 +448,6 @@ function updateDefaultInDestructuring(
 }
 
 // ---------------------------------------------------------------------------
-// Ensure ReactNode import
-// ---------------------------------------------------------------------------
-
-function ensureReactNodeImport(sourceFile: SourceFile): void {
-  const hasReactNodeImport = sourceFile.getImportDeclarations().some((imp) => {
-    const moduleSpecifier = imp.getModuleSpecifierValue();
-    if (moduleSpecifier !== "react") return false;
-    return imp.getNamedImports().some((n) => n.getName() === "ReactNode");
-  });
-
-  if (!hasReactNodeImport) {
-    const reactImport = sourceFile.getImportDeclarations().find(
-      (imp) => imp.getModuleSpecifierValue() === "react",
-    );
-
-    if (reactImport) {
-      reactImport.addNamedImport("ReactNode");
-    } else {
-      sourceFile.addImportDeclaration({
-        moduleSpecifier: "react",
-        namedImports: ["ReactNode"],
-      });
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Apply changes to a source file
 // ---------------------------------------------------------------------------
 
@@ -484,6 +461,7 @@ export interface ApplyChangesOptions {
 function applyChangesToFile(
   sourceFile: SourceFile,
   options: ApplyChangesOptions,
+  profile: FrameworkProfile,
 ): WriteResult {
   const originalContent = sourceFile.getFullText();
   const appliedChanges: string[] = [];
@@ -516,21 +494,21 @@ function applyChangesToFile(
   }
 
   const iface = propsDecl as InterfaceDeclaration;
-  let needsReactNodeImport = false;
+  let needsSlotImport = false;
 
   // Pre-process: detect slot↔prop conversions (same name, one added + one removed)
-  const processedChanges = preprocessConversions(changes);
+  const processedChanges = preprocessConversions(changes, profile);
 
   // Track destructuring updates to apply after interface changes
   const destructuringOps: Array<{ type: "add" | "remove" | "updateDefault"; name: string; defaultValue?: string }> = [];
 
   for (const change of processedChanges) {
-    const applied = applyChange(sourceFile, iface, change, targetSchema, destructuringOps);
+    const applied = applyChange(sourceFile, iface, change, targetSchema, destructuringOps, profile);
     if (applied) {
       appliedChanges.push(change.description);
-      // Check if we added a slot (ReactNode)
+      // Check if we added a slot
       if (change.target === "slot" && change.changeType === "added") {
-        needsReactNodeImport = true;
+        needsSlotImport = true;
       }
     } else {
       skippedChanges.push(change.description);
@@ -549,8 +527,8 @@ function applyChangesToFile(
     }
   }
 
-  if (needsReactNodeImport) {
-    ensureReactNodeImport(sourceFile);
+  if (needsSlotImport) {
+    profile.ensureSlotImport(sourceFile);
   }
 
   return {
@@ -568,6 +546,7 @@ function applyChange(
   change: SchemaChange,
   schema: ComponentSchema,
   destructuringOps: Array<{ type: "add" | "remove" | "updateDefault"; name: string; defaultValue?: string }>,
+  profile: FrameworkProfile,
 ): boolean {
   // Extract the field name from the fieldPath
   // e.g., "props.size" → "size", "variants.size.values" → "size"
@@ -579,7 +558,7 @@ function applyChange(
       if (change.changeType === "added") {
         const prop = schema.props.find((p) => p.name === fieldName);
         if (!prop) return false;
-        const added = addPropToInterface(iface, prop, "prop");
+        const added = addPropToInterface(iface, prop, "prop", profile);
         if (added) {
           const defaultStr = formatDefaultValue(prop.defaultValue, prop.type);
           destructuringOps.push({ type: "add", name: prop.name, defaultValue: defaultStr });
@@ -617,7 +596,7 @@ function applyChange(
       if (change.changeType === "added") {
         const variant = schema.variants.find((v) => v.name === fieldName);
         if (!variant) return false;
-        const added = addPropToInterface(iface, variant, "variant");
+        const added = addPropToInterface(iface, variant, "variant", profile);
         if (added) {
           const defaultStr = variant.defaultValue ? `"${variant.defaultValue}"` : undefined;
           destructuringOps.push({ type: "add", name: variant.name, defaultValue: defaultStr });
@@ -652,7 +631,7 @@ function applyChange(
       if (change.changeType === "added") {
         const slot = schema.slots.find((s) => s.name === fieldName);
         if (!slot) return false;
-        const added = addPropToInterface(iface, slot, "slot");
+        const added = addPropToInterface(iface, slot, "slot", profile);
         if (added) {
           destructuringOps.push({ type: "add", name: slot.name });
         }
@@ -679,7 +658,7 @@ function applyChange(
           required: false,
           description: state.description,
         };
-        const added = addPropToInterface(iface, prop, "prop");
+        const added = addPropToInterface(iface, prop, "prop", profile);
         if (added) {
           destructuringOps.push({ type: "add", name: state.name });
         }
@@ -737,23 +716,26 @@ function quoteIfString(value: unknown): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Apply schema changes to a React component file.
+ * Apply schema changes to a component file.
  *
  * @param filePath - Absolute path to the component file
  * @param options - Target schema and changes to apply
  * @param tsConfigPath - Optional path to tsconfig.json
+ * @param framework - Framework name (default: "react")
  * @returns WriteResult with original and new content
  */
 export function applySchemaChanges(
   filePath: string,
   options: ApplyChangesOptions,
   tsConfigPath?: string,
+  framework?: string,
 ): WriteResult {
-  const project = createWriteProject(tsConfigPath);
+  const profile = getFrameworkProfile(framework);
+  const project = createWriteProject(profile, tsConfigPath);
   project.addSourceFileAtPath(filePath);
   const sourceFile = project.getSourceFileOrThrow(filePath);
 
-  const result = applyChangesToFile(sourceFile, options);
+  const result = applyChangesToFile(sourceFile, options, profile);
 
   return result;
 }
@@ -767,12 +749,14 @@ export function applyAndSave(
   options: ApplyChangesOptions,
   tsConfigPath?: string,
   formatCommand?: string,
+  framework?: string,
 ): WriteResult {
-  const project = createWriteProject(tsConfigPath);
+  const profile = getFrameworkProfile(framework);
+  const project = createWriteProject(profile, tsConfigPath);
   project.addSourceFileAtPath(filePath);
   const sourceFile = project.getSourceFileOrThrow(filePath);
 
-  const result = applyChangesToFile(sourceFile, options);
+  const result = applyChangesToFile(sourceFile, options, profile);
 
   if (result.appliedChanges.length > 0) {
     sourceFile.saveSync();
@@ -789,16 +773,18 @@ export function applySchemaChangesToSource(
   source: string,
   options: ApplyChangesOptions,
   fileName: string = "Component.tsx",
+  framework?: string,
 ): WriteResult {
+  const profile = getFrameworkProfile(framework);
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: {
-      jsx: 4,
+      jsx: profile.jsxEmit,
       esModuleInterop: true,
       strict: true,
     },
   });
 
   const sourceFile = project.createSourceFile(fileName, source);
-  return applyChangesToFile(sourceFile, options);
+  return applyChangesToFile(sourceFile, options, profile);
 }

@@ -57,7 +57,7 @@ export const stageCommand = new Command("stage")
 
     let allChanges;
     if (opts.source === "code") {
-      const codeComponents = readCodeComponents(projectRoot, config.componentGlobs);
+      const codeComponents = readCodeComponents(projectRoot, config.componentGlobs, undefined, config.framework);
       allChanges = diffSchemas(committed, codeComponents);
     } else {
       console.log(chalk.red("  Figma source for staging not yet implemented."));

@@ -24,6 +24,8 @@ export const diffCommand = new Command("diff")
       const codeComponents = readCodeComponents(
         projectRoot,
         config.componentGlobs,
+        undefined,
+        config.framework,
       );
       let changes = diffSchemas(committed, codeComponents);
 

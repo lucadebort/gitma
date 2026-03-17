@@ -31,8 +31,8 @@ export interface ExtractedProp {
   description?: string;
   /** Parsed union literal values for enums, e.g. ["sm", "md", "lg"] */
   unionValues?: string[];
-  /** Whether this is a ReactNode type (slot candidate) */
-  isReactNode: boolean;
+  /** Whether this type represents a slot (renderable child content) */
+  isSlot: boolean;
   /** Whether this is a function/callback type */
   isCallback: boolean;
 }

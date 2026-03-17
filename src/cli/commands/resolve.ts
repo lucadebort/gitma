@@ -23,7 +23,7 @@ export const resolveCommand = new Command("resolve")
 
     const committed = loadSnapshot(projectRoot, "committed") ?? [];
     const figmaSnapshot = loadSnapshot(projectRoot, "figma");
-    const codeComponents = readCodeComponents(projectRoot, config.componentGlobs);
+    const codeComponents = readCodeComponents(projectRoot, config.componentGlobs, undefined, config.framework);
 
     if (!figmaSnapshot) {
       console.log(chalk.dim("\n  No Figma snapshot found. Run `gitma pull figma` first.\n"));

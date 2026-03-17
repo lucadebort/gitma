@@ -22,7 +22,7 @@ export const commitCommand = new Command("commit")
 
     let components;
     if (opts.source === "code") {
-      components = readCodeComponents(projectRoot, config.componentGlobs);
+      components = readCodeComponents(projectRoot, config.componentGlobs, undefined, config.framework);
     } else {
       console.log(chalk.red("  Figma source not yet supported."));
       process.exit(1);

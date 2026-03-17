@@ -77,7 +77,7 @@ async function pullFromCode(
   committed: ComponentSchema[],
   opts: { apply?: boolean; component?: string },
 ) {
-  const codeComponents = readCodeComponents(projectRoot, config.componentGlobs);
+  const codeComponents = readCodeComponents(projectRoot, config.componentGlobs, undefined, config.framework);
 
   let changes = diffSchemas(codeComponents, committed);
 
@@ -127,6 +127,7 @@ async function pullFromCode(
       { targetSchema, changes: componentChanges },
       undefined,
       config.formatCommand,
+      config.framework,
     );
 
     totalApplied += result.appliedChanges.length;

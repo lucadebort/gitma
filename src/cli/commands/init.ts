@@ -7,10 +7,11 @@
 
 import { Command } from "commander";
 import chalk from "chalk";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { saveConfig, configExists, type ProjectConfig } from "../../shared/config.js";
 import { saveSnapshot } from "../../diff-engine/snapshot.js";
+import { KNOWN_FRAMEWORKS, SUPPORTED_FRAMEWORKS, getFrameworkInfo } from "../../code-adapter/framework-profile.js";
 import readlineSync from "readline-sync";
 
 // ---------------------------------------------------------------------------
@@ -44,6 +45,7 @@ function extractFileKey(input: string): string {
 export const initCommand = new Command("init")
   .description("Initialize gitma in the current project")
   .option("--figma-key <key>", "Figma file key (skip interactive)")
+  .option("--framework <name>", "Framework: react, solid, vue, svelte, angular")
   .option("--globs <patterns...>", "Component file glob patterns")
   .option("--token-file <path>", "Path to .tokens.json file")
   .option("--token-format <format>", "Token format in code")
@@ -81,30 +83,69 @@ export const initCommand = new Command("init")
       figmaFileKey = opts.figmaKey;
     }
 
-    // --- Component globs ---
-    let componentGlobs: string[];
+    // --- Framework ---
+    let framework: string = "react";
     if (isInteractive) {
-      console.log(chalk.bold("  2. Component files\n"));
+      console.log(chalk.bold("  2. Framework\n"));
 
-      // Auto-detect common patterns
-      const detected = detectComponentPaths(projectRoot);
+      const detected = detectFramework(projectRoot);
       if (detected) {
         console.log(chalk.dim(`     Detected: ${detected}`));
         const useDetected = confirm(`Use "${detected}"?`);
-        componentGlobs = useDetected ? [detected] : [ask("Glob pattern for component files", "src/components/**/*.tsx")];
+        framework = useDetected ? detected : ask("Framework", "react");
       } else {
-        componentGlobs = [ask("Glob pattern for component files", "src/components/**/*.tsx")];
+        const supported = SUPPORTED_FRAMEWORKS.join(", ");
+        const profileOnly = KNOWN_FRAMEWORKS.filter((f) => !SUPPORTED_FRAMEWORKS.includes(f)).join(", ");
+        console.log(chalk.dim(`     Fully supported: ${supported}`));
+        if (profileOnly) {
+          console.log(chalk.dim(`     Coming soon: ${profileOnly}`));
+        }
+        framework = ask("Framework", "react");
+      }
+
+      if (!KNOWN_FRAMEWORKS.includes(framework)) {
+        console.log(chalk.red(`     Unknown framework "${framework}". Using "react".`));
+        framework = "react";
+      }
+
+      const info = getFrameworkInfo(framework);
+      if (info?.supportLevel === "profile-only") {
+        console.log(chalk.yellow(`     "${framework}" is recognized but reader/writer not yet implemented.`));
+        console.log(chalk.yellow(`     Config will be saved — full support coming soon.`));
       }
       console.log();
     } else {
-      componentGlobs = opts.globs ?? ["src/components/**/*.tsx"];
+      framework = opts.framework ?? "react";
+    }
+
+    // Get the default glob from the framework profile
+    const frameworkInfo = getFrameworkInfo(framework);
+    const defaultGlob = frameworkInfo?.profile.defaultGlob ?? "src/components/**/*.tsx";
+
+    // --- Component globs ---
+    let componentGlobs: string[];
+    if (isInteractive) {
+      console.log(chalk.bold("  3. Component files\n"));
+
+      // Auto-detect common patterns
+      const detected = detectComponentPaths(projectRoot, framework);
+      if (detected) {
+        console.log(chalk.dim(`     Detected: ${detected}`));
+        const useDetected = confirm(`Use "${detected}"?`);
+        componentGlobs = useDetected ? [detected] : [ask("Glob pattern for component files", defaultGlob)];
+      } else {
+        componentGlobs = [ask("Glob pattern for component files", defaultGlob)];
+      }
+      console.log();
+    } else {
+      componentGlobs = opts.globs ?? [defaultGlob];
     }
 
     // --- Token file ---
     let tokenFile: string | undefined;
     let tokenFormat: "css-vars" | "tailwind" = "css-vars";
     if (isInteractive) {
-      console.log(chalk.bold("  3. Design tokens\n"));
+      console.log(chalk.bold("  4. Design tokens\n"));
 
       // Auto-detect token files
       const detectedTokens = detectTokenFile(projectRoot);
@@ -132,7 +173,7 @@ export const initCommand = new Command("init")
     // --- Formatter ---
     let formatCommand: string | undefined;
     if (isInteractive) {
-      console.log(chalk.bold("  4. Code formatting\n"));
+      console.log(chalk.bold("  5. Code formatting\n"));
 
       const hasPrettier = existsSync(join(projectRoot, ".prettierrc"))
         || existsSync(join(projectRoot, ".prettierrc.json"))
@@ -156,7 +197,7 @@ export const initCommand = new Command("init")
     if (isInteractive && figmaFileKey) {
       const envPath = join(projectRoot, ".env");
       if (!existsSync(envPath)) {
-        console.log(chalk.bold("  5. Figma access token\n"));
+        console.log(chalk.bold("  6. Figma access token\n"));
         console.log(chalk.dim("     Create a token at: Figma → Settings → Security → Personal access tokens"));
         console.log(chalk.dim("     Scopes needed: file_content:read, library_assets:read\n"));
 
@@ -173,6 +214,7 @@ export const initCommand = new Command("init")
     // --- Save config ---
     const config: ProjectConfig = {
       figmaFileKey,
+      framework: framework !== "react" ? framework : undefined,
       componentGlobs,
       tokenFile,
       tokenFormat,
@@ -205,18 +247,50 @@ export const initCommand = new Command("init")
 // Auto-detection
 // ---------------------------------------------------------------------------
 
-function detectComponentPaths(projectRoot: string): string | null {
+const FRAMEWORK_EXTENSIONS: Record<string, string> = {
+  react: "tsx",
+  solid: "tsx",
+  vue: "vue",
+  svelte: "svelte",
+  angular: "component.ts",
+};
+
+function detectFramework(projectRoot: string): string | null {
+  // Check package.json dependencies
+  const pkgPath = join(projectRoot, "package.json");
+  if (!existsSync(pkgPath)) return null;
+
+  try {
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+    if (deps["solid-js"]) return "solid";
+    if (deps["svelte"]) return "svelte";
+    if (deps["vue"]) return "vue";
+    if (deps["@angular/core"]) return "angular";
+    if (deps["react"]) return "react";
+  } catch {
+    // ignore parse errors
+  }
+
+  return null;
+}
+
+function detectComponentPaths(projectRoot: string, framework: string = "react"): string | null {
+  const ext = FRAMEWORK_EXTENSIONS[framework] ?? "tsx";
   const candidates = [
     "src/components",
     "src/ui",
     "components",
     "app/components",
     "lib/components",
+    ...(framework === "svelte" ? ["src/lib/components", "src/lib"] : []),
+    ...(framework === "angular" ? ["src/app/components", "src/app/shared"] : []),
   ];
 
   for (const dir of candidates) {
     if (existsSync(join(projectRoot, dir))) {
-      return `${dir}/**/*.tsx`;
+      return `${dir}/**/*.${ext}`;
     }
   }
   return null;
